@@ -10,6 +10,19 @@ export default {
   theme: {
   	extend: {
   		colors: {
+        // BOLT Design System Colors
+        'bolt-black': '#020A18',
+        'bolt-medium-black': '#10103C',
+        'bolt-dark-purple': '#4322AA',
+        'bolt-blue': '#135EE3',
+        'bolt-cyan': '#68D8FC',
+        'bolt-purple': '#B688FF',
+        'bolt-white': '#F8F8FE',
+        'bolt-mid-blue': '#005CFF',
+        'bolt-light-blue': '#D1D8FA',
+        'bolt-light-cyan': '#B2ECFF',
+        'bolt-light-purple': '#C5B8FF',
+
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -61,6 +74,10 @@ export default {
   				ring: 'hsl(var(--sidebar-ring))'
   			}
   		},
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+      },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

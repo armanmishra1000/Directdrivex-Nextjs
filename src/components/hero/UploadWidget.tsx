@@ -111,7 +111,13 @@ export function UploadWidget() {
       setUploadProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
-          setCurrentState('success');
+          // Randomly decide if upload succeeds or fails for demonstration
+          if (Math.random() > 0.2) {
+            setCurrentState('success');
+          } else {
+            setCurrentState('error');
+            toast.error("Upload failed. Please try again.");
+          }
           return 100;
         }
         return prev + 10;
@@ -153,6 +159,11 @@ export function UploadWidget() {
     }, 1000);
   };
 
+  const handleBatchCancel = () => {
+    setBatchState('cancelled');
+    toast.info('All uploads have been cancelled.');
+  };
+
   const copyLink = () => {
     navigator.clipboard.writeText("https://directdrivex.com/download/xyz123");
     toast.success("Link copied to clipboard!");
@@ -161,8 +172,8 @@ export function UploadWidget() {
   const IdleState = () => (
     <div
       className={cn(
-        "bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:border-blue-600 hover:bg-blue-600/5 hover:shadow-lg group",
-        { 'border-blue-600 bg-blue-600/5 shadow-lg animate-pulse': isDragOver }
+        "bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:border-bolt-blue hover:bg-bolt-light-blue/20 hover:shadow-lg group",
+        { 'border-bolt-blue bg-bolt-light-blue/20 shadow-lg animate-pulse': isDragOver }
       )}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -171,8 +182,8 @@ export function UploadWidget() {
     >
       <input type="file" ref={fileInputRef} onChange={(e) => handleFileSelect(e.target.files)} className="hidden" multiple />
       <div className="text-center">
-        <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-blue-600/10 to-blue-600/20 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform animate-float">
-          <CloudUpload className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+        <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-bolt-blue/10 to-bolt-blue/20 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform animate-float">
+          <CloudUpload className="w-6 h-6 sm:w-8 sm:h-8 text-bolt-blue" />
         </div>
         <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">
           {isDragOver ? "✨ Drop files here" : "Drag & Drop up to 5 files here"}
@@ -183,7 +194,7 @@ export function UploadWidget() {
           <div className="flex-1 h-px bg-slate-300"></div>
         </div>
         <div className="mb-3 sm:mb-4">
-          <button className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none transition-all duration-200 transform hover:-translate-y-0.5">
+          <button className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-bolt-blue to-bolt-mid-blue rounded-xl shadow-lg hover:shadow-xl hover:from-bolt-mid-blue hover:to-bolt-blue focus:outline-none transition-all duration-200 transform hover:-translate-y-0.5">
             <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             Browse Files
           </button>
@@ -209,7 +220,7 @@ export function UploadWidget() {
     const { Icon, bgColor, color } = getFileTypeInfo(selectedFile.name);
     return (
       <div className="text-center space-y-3 sm:space-y-4">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-bolt-light-blue rounded-2xl p-4 sm:p-6 shadow-sm">
           <div className="flex items-center space-x-3 sm:space-x-4">
             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-sm border border-slate-200 ${bgColor}`}>
               <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${color}`} />
@@ -225,7 +236,7 @@ export function UploadWidget() {
             </div>
           </div>
         </div>
-        <button onClick={handleUpload} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-sm sm:text-base">
+        <button onClick={handleUpload} className="w-full bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-sm sm:text-base">
           Upload File
         </button>
       </div>
@@ -234,9 +245,9 @@ export function UploadWidget() {
 
   const BatchSelectedState = () => (
     <div className="text-center space-y-3 sm:space-y-4">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-bolt-light-blue rounded-2xl p-4 sm:p-6 shadow-sm">
         <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-bolt-blue rounded-xl flex items-center justify-center shadow-sm">
             <FileIconLucide className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div className="text-left">
@@ -275,7 +286,7 @@ export function UploadWidget() {
           )}
         </div>
       </div>
-      <button onClick={handleBatchUpload} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-sm sm:text-base">
+      <button onClick={handleBatchUpload} className="w-full bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-sm sm:text-base">
         Upload {batchFiles.length} Files (Max {MAX_FILES})
       </button>
     </div>
@@ -286,11 +297,11 @@ export function UploadWidget() {
     const { Icon } = getFileTypeInfo(selectedFile.name);
     return (
       <div className="text-center space-y-3 sm:space-y-4">
-        <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 sm:p-6 shadow-sm transition-opacity ${isCancelling ? 'opacity-60' : ''}`}>
+        <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 border border-bolt-light-blue rounded-2xl p-4 sm:p-6 shadow-sm transition-opacity ${isCancelling ? 'opacity-60' : ''}`}>
           <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-sm transition-colors ${isCancelling ? 'bg-orange-500' : 'bg-slate-200'}`}>
               {isCancelling || uploadProgress > 0 ? (
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spinner-rotation" />
+                <Loader2 className="w-6 h-6 text-bolt-blue animate-spinner-rotation" />
               ) : (
                 <Icon className="w-6 h-6 text-slate-600" />
               )}
@@ -303,7 +314,7 @@ export function UploadWidget() {
             </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 shadow-inner">
-            <div className={`h-2 rounded-full transition-all duration-200 ${isCancelling ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`} style={{ width: `${uploadProgress}%` }}></div>
+            <div className={`h-2 rounded-full transition-all duration-200 ${isCancelling ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 'bg-gradient-to-r from-bolt-blue to-bolt-cyan'}`} style={{ width: `${uploadProgress}%` }}></div>
           </div>
         </div>
         <button onClick={handleCancel} disabled={isCancelling} className="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 hover:from-red-500 hover:to-red-600 hover:transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none text-sm sm:text-base">
@@ -318,7 +329,7 @@ export function UploadWidget() {
 
   const BatchProcessingState = () => (
     <div className="text-center space-y-3 sm:space-y-4">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-bolt-light-blue rounded-2xl p-4 sm:p-6 shadow-sm">
         <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">Uploading Files...</h3>
         <div className="space-y-3 max-h-48 sm:max-h-64 overflow-y-auto">
           {batchFiles.map(f => {
@@ -333,7 +344,7 @@ export function UploadWidget() {
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-200 ${stateBg}`}>
                     {f.state === 'pending' && <Icon className={`w-5 h-5 ${color}`} />}
-                    {f.state === 'uploading' && <Loader2 className="w-5 h-5 text-blue-600 animate-spinner-rotation" />}
+                    {f.state === 'uploading' && <Loader2 className="w-5 h-5 text-bolt-blue animate-spinner-rotation" />}
                     {f.state === 'success' && <Check className="w-5 h-5 text-white" />}
                   </div>
                   <div className="flex-1 text-left min-w-0">
@@ -348,7 +359,7 @@ export function UploadWidget() {
                 {(f.state === 'uploading' || f.state === 'success') && (
                   <div className="mt-3">
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-500 h-2 rounded-full transition-all duration-500" style={{ width: `${f.progress}%` }}></div>
+                      <div className="bg-gradient-to-r from-bolt-blue to-bolt-cyan h-2 rounded-full transition-all duration-500" style={{ width: `${f.progress}%` }}></div>
                     </div>
                   </div>
                 )}
@@ -357,7 +368,7 @@ export function UploadWidget() {
           })}
         </div>
       </div>
-      <button className="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 hover:from-red-500 hover:to-red-600 hover:transform hover:scale-105 text-sm sm:text-base">
+      <button onClick={handleBatchCancel} className="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 hover:from-red-500 hover:to-red-600 hover:transform hover:scale-105 text-sm sm:text-base">
         <div className="flex items-center justify-center space-x-2">
           <X className="w-4 h-4" />
           <span>Cancel All Uploads</span>
@@ -381,7 +392,7 @@ export function UploadWidget() {
           </div>
         </div>
       </div>
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-3">
+      <div className="bg-blue-50 border border-bolt-light-blue rounded-2xl p-4 space-y-3">
         <div className="text-left">
           <p className="text-sm font-medium text-slate-700 mb-2">Download Link:</p>
           <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center space-x-2">
@@ -393,7 +404,7 @@ export function UploadWidget() {
         </div>
       </div>
       <div className="space-y-2">
-        <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 w-full">
+        <button className="bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 w-full">
           Open Download Page
         </button>
         <button onClick={resetAll} className="bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors w-full">
@@ -417,10 +428,48 @@ export function UploadWidget() {
         </div>
       </div>
       <div className="space-y-2">
-        <button onClick={resetAll} className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 w-full">
+        <button onClick={resetAll} className="bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 w-full">
           Start New Upload
         </button>
       </div>
+    </div>
+  );
+
+  const ErrorState = () => (
+    <div className="text-center space-y-4">
+      <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-sm">
+            <X className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1 text-left min-w-0">
+            <h4 className="font-semibold text-slate-900">Upload Failed</h4>
+            <p className="text-sm text-slate-500">Please try again</p>
+          </div>
+        </div>
+      </div>
+      <button onClick={resetAll} className="w-full bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-bold py-3 px-6 rounded-lg">
+        Try Again
+      </button>
+    </div>
+  );
+
+  const BatchCancelledState = () => (
+    <div className="text-center space-y-4">
+      <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+            <X className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1 text-left">
+            <h4 className="font-semibold text-slate-900">Batch Upload Cancelled</h4>
+            <p className="text-sm text-slate-500">All file uploads have been cancelled successfully</p>
+          </div>
+        </div>
+      </div>
+      <button onClick={resetAll} className="w-full bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-bold py-3 px-6 rounded-lg">
+        Start New Batch Upload
+      </button>
     </div>
   );
 
@@ -429,9 +478,11 @@ export function UploadWidget() {
     if (currentState === 'uploading') return <UploadingState />;
     if (currentState === 'success') return <SuccessState />;
     if (currentState === 'cancelled') return <CancelledState />;
+    if (currentState === 'error') return <ErrorState />;
     if (batchState === 'selected') return <BatchSelectedState />;
     if (batchState === 'processing') return <BatchProcessingState />;
     if (batchState === 'success') return <SuccessState isBatch />;
+    if (batchState === 'cancelled') return <BatchCancelledState />;
     return <IdleState />;
   };
 
@@ -439,7 +490,7 @@ export function UploadWidget() {
     <div className="lg:col-span-2">
       <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 lg:p-8 h-full">
         <div className="text-center mb-4 sm:mb-6">
-          <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-700 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+          <div className="inline-flex items-center space-x-2 bg-blue-50 text-bolt-blue px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
             <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>Quick Upload</span>
           </div>

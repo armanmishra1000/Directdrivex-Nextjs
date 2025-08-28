@@ -3,7 +3,7 @@
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Check, Star, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, 'useState } from 'react';
 
 const features = [
   { name: 'Free Storage', dropbox: '2GB', google: '15GB', mfc: '50GB' },
@@ -30,7 +30,7 @@ export function ComparisonSection() {
         </div>
       );
     }
-    return <div className={cn('text-slate-600', isMfc && 'text-blue-600 font-bold')}>{value}</div>;
+    return <div className={cn('text-slate-600', isMfc && 'text-bolt-blue font-bold')}>{value}</div>;
   };
 
   const DesktopView = () => (
@@ -40,7 +40,7 @@ export function ComparisonSection() {
       <div className="font-semibold text-slate-700 text-base text-center py-4">Dropbox</div>
       <div className="font-semibold text-slate-700 text-base text-center py-4">Google Drive</div>
       <div className="relative">
-        <div className="font-semibold text-blue-800 text-base text-center py-2">DirectDriveX</div>
+        <div className="font-semibold text-bolt-dark-purple text-base text-center py-2">DirectDriveX</div>
       </div>
 
       {/* Rows */}
@@ -53,8 +53,8 @@ export function ComparisonSection() {
       <div className="space-y-3 text-base text-center">
         {features.map(f => <div key={f.name} className="py-4">{renderValue(f.google, false)}</div>)}
       </div>
-      <div className="space-y-3 text-base text-center bg-gradient-to-b from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-2 shadow-lg transform scale-105 relative">
-        <div className="absolute text-nowrap -top-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-500 to-blue-300 text-white text-sm px-4 py-2 rounded-full font-bold shadow-lg flex items-center">
+      <div className="space-y-3 text-base text-center bg-gradient-to-b from-bolt-light-blue/50 to-white border-2 border-bolt-blue rounded-xl p-2 shadow-lg transform scale-105 relative">
+        <div className="absolute text-nowrap -top-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-bolt-blue to-bolt-cyan text-white text-sm px-4 py-2 rounded-full font-bold shadow-lg flex items-center">
           <Star className="w-4 h-4 mr-1" fill="white" /> BEST CHOICE
         </div>
         {features.map(f => <div key={f.name} className="py-4 hover:scale-105 transition-transform">{renderValue(f.mfc, true)}</div>)}
@@ -75,7 +75,7 @@ export function ComparisonSection() {
               onClick={() => setActiveTab(p)}
               className={cn(
                 "flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-md",
-                activeTab === p ? 'text-blue-600 bg-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                activeTab === p ? 'text-bolt-blue bg-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               )}
             >
               {{ mfc: 'DirectDriveX', dropbox: 'Dropbox', google: 'Google Drive' }[p]}
@@ -87,8 +87,8 @@ export function ComparisonSection() {
             <div className="font-semibold text-slate-700 uppercase tracking-wide py-3">Features</div>
             {features.map(f => <div key={f.name} className="py-3">{f.name}</div>)}
           </div>
-          <div className={cn("space-y-2 text-sm text-center", activeTab === 'mfc' && 'bg-gradient-to-b from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg')}>
-            <div className={cn("font-semibold py-3", activeTab === 'mfc' ? 'text-blue-800 font-bold' : 'text-slate-700')}>{providerName}</div>
+          <div className={cn("space-y-2 text-sm text-center", activeTab === 'mfc' && 'bg-gradient-to-b from-bolt-light-blue/50 to-white border-2 border-bolt-blue rounded-lg')}>
+            <div className={cn("font-semibold py-3", activeTab === 'mfc' ? 'text-bolt-dark-purple font-bold' : 'text-slate-700')}>{providerName}</div>
             {providerData.map((value, i) => <div key={i} className="py-3">{renderValue(value, activeTab === 'mfc')}</div>)}
           </div>
         </div>
@@ -111,7 +111,7 @@ export function ComparisonSection() {
         {isMobile ? <MobileView /> : <DesktopView />}
 
         <div className="text-center">
-          <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium px-8 py-3 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5">
+          <button className="bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-medium px-8 py-3 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5">
             Get Started - 50GB Free Forever
           </button>
           <p className="text-sm text-slate-500 mt-5">
