@@ -2,22 +2,10 @@
 
 import { Check } from 'lucide-react';
 import React from 'react';
-import { AnalyticsService } from '@/services/analyticsService';
 
 export function HeroSection() {
-  const handleClaimStorage = () => {
-    // Track CTA button click
-    AnalyticsService.trackCTAButtonClicked({
-      button_type: 'claim_storage',
-      location: 'hero_section'
-    });
-    
-    // Navigate to registration
-    window.location.href = '/register';
-  };
-
   return (
-    <div className="space-y-6 lg:col-span-3 sm:space-y-8 lg:space-y-10">
+    <div className="space-y-6 sm:space-y-8 lg:space-y-10">
       <div className="inline-flex items-center px-3 py-2 text-xs font-medium text-green-700 rounded-full bg-green-50 sm:px-4 sm:text-sm">
         <div className="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></div>
         <span className="font-semibold">12,847 users</span> joined this week
@@ -33,10 +21,7 @@ export function HeroSection() {
       </div>
 
       <div className="space-y-4 sm:space-y-5">
-        <button 
-          onClick={handleClaimStorage}
-          className="w-full px-6 py-3 mb-3 text-base font-bold text-white transition-all shadow-lg bg-gradient-to-r from-bolt-blue to-bolt-mid-blue sm:py-4 sm:px-8 rounded-xl hover:shadow-xl hover:-translate-y-1 sm:text-lg sm:w-auto"
-        >
+        <button className="w-full px-6 py-3 mb-3 text-base font-bold text-white transition-all shadow-lg bg-gradient-to-r from-bolt-blue to-bolt-mid-blue sm:py-4 sm:px-8 rounded-xl hover:shadow-xl hover:-translate-y-1 sm:text-lg sm:w-auto">
           Claim Your 50GB Now - Free Forever
         </button>
         <div className="space-y-3 sm:space-y-4">

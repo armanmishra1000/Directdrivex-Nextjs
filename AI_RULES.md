@@ -4,6 +4,9 @@ This document outlines the technology stack and specific library usage guideline
 
 ## Tech Stack Overview
 
+
+My project runs on port 4200 using the command npm run dev.
+
 The application is built using the following core technologies:
 
 *   **Framework**: Next.js (App Router)

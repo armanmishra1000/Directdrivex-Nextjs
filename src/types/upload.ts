@@ -1,4 +1,5 @@
 export type UploadState = 'idle' | 'selected' | 'uploading' | 'success' | 'error' | 'cancelled';
+
 export type BatchUploadState = 'idle' | 'selected' | 'processing' | 'success' | 'error' | 'cancelled';
 
 export interface FileState {

@@ -1,144 +1,168 @@
-import { UploadEvent, QuotaInfo } from '@/types/api';
+import { Observable } from '@/lib/observable';
+
+export interface UploadEvent {
+  type: 'progress' | 'success' | 'error';
+  value: number | string;
+}
+
+export interface QuotaInfo {
+  daily_limit_bytes: number;
+  daily_limit_gb: number;
+  current_usage_bytes: number;
+  current_usage_gb: number;
+  remaining_bytes: number;
+  remaining_gb: number;
+  usage_percentage: number;
+  user_type: 'authenticated' | 'anonymous';
+}
+
+export interface InitiateUploadRequest {
+  filename: string;
+  size: number;
+  content_type: string;
+}
+
+export interface InitiateUploadResponse {
+  file_id: string;
+  gdrive_upload_url: string;
+}
 
 export class UploadService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-  private wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+  private apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+  private wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000/ws_api';
   private currentWebSocket?: WebSocket;
 
-  // Single file upload with WebSocket progress tracking
+  private isAuthenticated(): boolean {
+    try {
+      return !!localStorage.getItem('access_token');
+    } catch {
+      return false;
+    }
+  }
+
+  private getFileSizeLimits() {
+    const isAuth = this.isAuthenticated();
+    return {
+      singleFile: isAuth ? 5 * 1024 * 1024 * 1024 : 2 * 1024 * 1024 * 1024, // 5GB or 2GB
+      daily: isAuth ? 5 * 1024 * 1024 * 1024 : 2 * 1024 * 1024 * 1024
+    };
+  }
+
+  validateFileSize(fileSize: number): { valid: boolean; error?: string } {
+    const limits = this.getFileSizeLimits();
+    const isAuth = this.isAuthenticated();
+    const limitText = isAuth ? '5GB' : '2GB';
+
+    if (fileSize > limits.singleFile) {
+      return {
+        valid: false,
+        error: `File size exceeds ${limitText} limit for ${isAuth ? 'authenticated' : 'anonymous'} users`
+      };
+    }
+    return { valid: true };
+  }
+
+  async getQuotaInfo(): Promise<QuotaInfo> {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/v1/upload/quota-info`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      console.error("API call to getQuotaInfo failed:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Serving mock quota data because API is unavailable.");
+        return Promise.resolve({
+          daily_limit_bytes: 2147483648,
+          daily_limit_gb: 2,
+          current_usage_bytes: 536870912,
+          current_usage_gb: 0.5,
+          remaining_bytes: 1610612736,
+          remaining_gb: 1.5,
+          usage_percentage: 25,
+          user_type: 'anonymous',
+        });
+      }
+      throw error;
+    }
+  }
+
+  async initiateUpload(fileInfo: InitiateUploadRequest): Promise<InitiateUploadResponse> {
+    const validation = this.validateFileSize(fileInfo.size);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    const response = await fetch(`${this.apiUrl}/api/v1/upload/initiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fileInfo)
+    });
+
+    if (!response.ok) throw new Error(`Upload initiation failed: ${response.status}`);
+    return response.json();
+  }
+
   upload(file: File): Observable<UploadEvent> {
     return new Observable(observer => {
-      const wsUrl = `${this.wsUrl}/upload`;
-      
-      console.log(`[UPLOAD_SERVICE] Connecting to WebSocket: ${wsUrl}`);
-      const ws = new WebSocket(wsUrl);
-      this.currentWebSocket = ws;
-      
-      let connectionStartTime = Date.now();
-      
-      // Add connection timeout to prevent infinite waiting
-      const connectionTimeout = setTimeout(() => {
-        if (ws.readyState === WebSocket.CONNECTING) {
-          console.error(`[UPLOAD_SERVICE] Connection timeout for file: ${file.name}`);
-          ws.close();
-          observer.error(new Error('Connection timeout - server may be unavailable'));
-        }
-      }, 30000); // 30 second timeout
-      
-      ws.onopen = () => {
-        clearTimeout(connectionTimeout);
-        const connectionTime = Date.now() - connectionStartTime;
-        console.log(`[DEBUG] 🔌 [UPLOAD_SERVICE] WebSocket opened successfully in ${connectionTime}ms`);
-        console.log(`[DEBUG] 🔌 [UPLOAD_SERVICE] WebSocket readyState:`, ws.readyState);
-        
-        // Start sending file chunks
-        this.sliceAndSend(file, ws, observer);
+      const validation = this.validateFileSize(file.size);
+      if (!validation.valid) {
+        observer.error(new Error(validation.error));
+        return;
+      }
+
+      const fileInfo: InitiateUploadRequest = {
+        filename: file.name,
+        size: file.size,
+        content_type: file.type || 'application/octet-stream'
       };
-      
-      ws.onmessage = (event) => {
-        console.log(`[DEBUG] 📨 [UPLOAD_SERVICE] WebSocket message received:`, {
-          data: event.data,
-          type: event.type
-        });
+
+      this.initiateUpload(fileInfo).then(response => {
+        const wsUrl = `${this.wsUrl}/upload_parallel/${response.file_id}?gdrive_url=${encodeURIComponent(response.gdrive_upload_url)}`;
         
-        try {
-          const message: any = JSON.parse(event.data);
-          
-          if (message.type === 'progress') {
-            observer.next(message as UploadEvent);
-          } else if (message.type === 'success') {
-            observer.next(message as UploadEvent);
-            observer.complete();
-          } else if (message.type === 'error') {
-            observer.error(new Error(message.value));
+        this.currentWebSocket = new WebSocket(wsUrl);
+        
+        this.currentWebSocket.onopen = () => {
+          this.sliceAndSend(file, this.currentWebSocket!);
+        };
+        
+        this.currentWebSocket.onmessage = (event) => {
+          try {
+            const jsonMessage = JSON.parse(event.data);
+            if (jsonMessage.type === 'progress') {
+              observer.next({ type: 'progress', value: jsonMessage.value });
+            } else if (jsonMessage.type === 'success') {
+              observer.next({ type: 'success', value: jsonMessage.value });
+              observer.complete();
+            } else if (jsonMessage.type === 'error') {
+              observer.error(new Error(jsonMessage.value));
+            }
+          } catch (parseError) {
+            // Fallback string parsing
+            const message = event.data;
+            if (message.startsWith('PROGRESS:')) {
+              const progress = parseInt(message.split(':')[1]);
+              observer.next({ type: 'progress', value: progress });
+            } else if (message.startsWith('SUCCESS:')) {
+              const fileId = message.split(':')[1];
+              observer.next({ type: 'success', value: fileId });
+              observer.complete();
+            } else if (message.startsWith('ERROR:')) {
+              const error = message.split(':')[1];
+              observer.error(new Error(error));
+            }
           }
-        } catch (e) {
-          console.error('[UPLOAD_SERVICE] Failed to parse message from server:', event.data);
-        }
-      };
-
-      ws.onerror = (error) => {
-        clearTimeout(connectionTimeout);
-        console.error('[UPLOAD_SERVICE] WebSocket error:', error);
-        observer.error(new Error('Connection to server failed.'));
-      };
-
-      ws.onclose = (event) => {
-        clearTimeout(connectionTimeout);
-        console.log(`[DEBUG] 🔌 [UPLOAD_SERVICE] WebSocket closed:`, {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean
-        });
+        };
         
-        if (!event.wasClean) {
-          observer.error(new Error('Lost connection to server during upload.'));
-        } else {
-          observer.complete();
-        }
-      };
-
-      return () => {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close();
-        }
-      };
+        this.currentWebSocket.onerror = () => {
+          observer.error(new Error('WebSocket connection failed'));
+        };
+        
+      }).catch(error => observer.error(error));
     });
   }
 
-  private sliceAndSend(file: File, ws: WebSocket, observer: Observer<UploadEvent>, start: number = 0): void {
-    const chunkSize = 4 * 1024 * 1024; // 4MB chunks
-    console.log(`[DEBUG] 🔪 sliceAndSend called - start: ${start}, file size: ${file.size}`);
-    
-    if (start >= file.size) {
-      console.log(`[DEBUG] ✅ File upload complete, sending DONE message`);
-      ws.send("DONE");
-      return;
-    }
-
-    const end = Math.min(start + chunkSize, file.size);
-    const chunk = file.slice(start, end);
-    console.log(`[DEBUG] 📦 Chunk created - start: ${start}, end: ${end}, size: ${chunk.size} bytes`);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result instanceof ArrayBuffer && ws.readyState === WebSocket.OPEN) {
-        // Convert ArrayBuffer to base64 and send as JSON
-        const bytes = new Uint8Array(e.target.result);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Data = btoa(binary);
-        
-        const chunkMessage = {
-          bytes: base64Data
-        };
-        
-        console.log(`[DEBUG] 📤 Sending JSON chunk message with base64 data, length: ${base64Data.length}`);
-        ws.send(JSON.stringify(chunkMessage));
-        
-        // Send next chunk
-        setTimeout(() => {
-          this.sliceAndSend(file, ws, observer, end);
-        }, 100); // Small delay to prevent overwhelming the WebSocket
-      } else {
-        console.log(`[DEBUG] ❌ WebSocket not ready, state:`, ws.readyState);
-      }
-    };
-    
-    reader.onerror = (e) => {
-      console.error(`[DEBUG] ❌ FileReader error:`, e);
-      observer.error(new Error('Failed to read file chunk'));
-    };
-    
-    console.log(`[DEBUG] 📖 Starting FileReader.readAsArrayBuffer for chunk`);
-    reader.readAsArrayBuffer(chunk);
-  }
-
-  // Cancel current upload
   cancelUpload(): boolean {
-    if (this.currentWebSocket) {
+    if (this.currentWebSocket && this.currentWebSocket.readyState === WebSocket.OPEN) {
       this.currentWebSocket.close();
       this.currentWebSocket = undefined;
       return true;
@@ -146,42 +170,35 @@ export class UploadService {
     return false;
   }
 
-  // Get user quota information
-  async getQuotaInfo(): Promise<QuotaInfo> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/quota`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch quota info:', error);
-      // Return default quota for anonymous users
-      return {
-        daily_limit_gb: 2,
-        current_usage_gb: 0,
-        remaining_gb: 2,
-        usage_percentage: 0,
-        user_type: 'anonymous'
-      };
+  private sliceAndSend(file: File, ws: WebSocket, start: number = 0): void {
+    const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
+    
+    if (start >= file.size) {
+      ws.send("DONE");
+      return;
     }
-  }
-}
 
-// Simple Observable implementation for WebSocket events
-class Observable<T> {
-  constructor(private subscribeFn: (observer: Observer<T>) => () => void) {}
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
 
-  subscribe(observer: Observer<T>): { unsubscribe: () => void } {
-    const cleanup = this.subscribeFn(observer);
-    return {
-      unsubscribe: cleanup
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result instanceof ArrayBuffer) {
+        const bytes = new Uint8Array(e.target.result);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64Data = btoa(binary);
+        
+        ws.send(JSON.stringify({ bytes: base64Data }));
+        
+        setTimeout(() => {
+          this.sliceAndSend(file, ws, end);
+        }, 100);
+      }
     };
+    
+    reader.readAsArrayBuffer(chunk);
   }
-}
-
-interface Observer<T> {
-  next: (value: T) => void;
-  error: (error: any) => void;
-  complete: () => void;
 }

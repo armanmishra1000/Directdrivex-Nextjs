@@ -1,124 +1,72 @@
-import { User } from '@/types/api';
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  storage_quota_gb: number;
+}
 
 export class AuthService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+  private apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
-  // Check if user is authenticated
   isAuthenticated(): boolean {
-    if (typeof window === 'undefined') return false;
-    return !!localStorage.getItem('access_token');
-  }
-
-  // Get current user info
-  async getCurrentUser(): Promise<User | null> {
-    const token = localStorage.getItem('access_token');
-    if (!token) return null;
-
     try {
-      const response = await fetch(`${this.baseUrl}/api/user/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        // Token might be expired, remove it
-        this.logout();
-        return null;
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch user info:', error);
-      this.logout();
-      return null;
-    }
-  }
-
-  // Google OAuth login
-  googleLogin(): void {
-    if (typeof window === 'undefined') return;
-    window.location.href = `${this.baseUrl}/auth/google`;
-  }
-
-  // Logout
-  logout(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.reload();
-  }
-
-  // Get access token
-  getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('access_token');
-  }
-
-  // Set access token
-  setAccessToken(token: string): void {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('access_token', token);
-  }
-
-  // Refresh token
-  async refreshToken(): Promise<boolean> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return false;
-
-    try {
-      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        this.setAccessToken(data.access_token);
-        if (data.refresh_token) {
-          localStorage.setItem('refresh_token', data.refresh_token);
-        }
-        return true;
-      } else {
-        this.logout();
-        return false;
-      }
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
-      this.logout();
+      return !!localStorage.getItem('access_token');
+    } catch {
       return false;
     }
   }
 
-  // Check if token is expired
-  isTokenExpired(): boolean {
-    const token = this.getAccessToken();
-    if (!token) return true;
-
+  getCurrentUser(): User | null {
     try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return null;
+      
+      // Decode JWT payload (simple base64 decode for demo)
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
-    } catch (error) {
-      console.error('Failed to parse token:', error);
-      return true;
+      return {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        storage_quota_gb: payload.storage_quota_gb
+      };
+    } catch {
+      return null;
     }
   }
 
-  // Get user type for quota purposes
-  getUserType(): 'anonymous' | 'authenticated' {
-    return this.isAuthenticated() ? 'authenticated' : 'anonymous';
+  async login(credentials: { email: string; password: string }) {
+    const formData = new FormData();
+    formData.append('username', credentials.email);
+    formData.append('password', credentials.password);
+    
+    const response = await fetch(`${this.apiUrl}/api/v1/auth/token`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) throw new Error('Login failed');
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access_token);
+    return data;
   }
 
-  // Get file size limits based on authentication
-  getFileSizeLimits(): { singleFile: number; daily: number } {
-    const isAuthenticated = this.isAuthenticated();
-    return {
-      singleFile: isAuthenticated ? 5 * 1024 * 1024 * 1024 : 2 * 1024 * 1024 * 1024, // 5GB or 2GB
-      daily: isAuthenticated ? 5 * 1024 * 1024 * 1024 : 2 * 1024 * 1024 * 1024 // 5GB or 2GB
-    };
+  async register(user: any) {
+    const response = await fetch(`${this.apiUrl}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    });
+
+    if (!response.ok) throw new Error('Registration failed');
+    return response.json();
+  }
+
+  logout(): void {
+    try {
+      localStorage.removeItem('access_token');
+      window.location.reload();
+    } catch {
+      // Handle case where localStorage is not available
+    }
   }
 }

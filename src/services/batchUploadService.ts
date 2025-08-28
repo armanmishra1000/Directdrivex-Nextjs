@@ -1,129 +1,80 @@
-import { BatchFileInfo, BatchInitResponse, UploadEvent } from '@/types/api';
+import { Observable } from '@/lib/observable';
+import { UploadEvent } from './uploadService';
+
+export interface BatchFileInfo {
+  filename: string;
+  size: number;
+  content_type: string;
+}
+
+export interface BatchInitResponse {
+  batch_id: string;
+  files: Array<{
+    file_id: string;
+    original_filename: string;
+    gdrive_upload_url: string;
+  }>;
+}
 
 export class BatchUploadService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-  private wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+  private apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+  private wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000/ws_api';
 
-  // Initiate batch upload (prepare multiple files)
   async initiateBatch(files: BatchFileInfo[]): Promise<BatchInitResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/batch-upload/initiate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ files }),
-      });
+    const response = await fetch(`${this.apiUrl}/api/v1/batch/initiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files })
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to initiate batch upload:', error);
-      throw error;
-    }
+    if (!response.ok) throw new Error(`Batch initiation failed: ${response.status}`);
+    return response.json();
   }
 
-  // Individual file upload within batch
   uploadBatchFile(fileId: string, gdriveUrl: string, file: File): Observable<UploadEvent> {
     return new Observable(observer => {
       const wsUrl = `${this.wsUrl}/upload_parallel/${fileId}?gdrive_url=${encodeURIComponent(gdriveUrl)}`;
-      
-      console.log(`[BATCH_UPLOAD_SERVICE] Connecting to WebSocket: ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       
-      let connectionStartTime = Date.now();
-      
-      // Add connection timeout to prevent infinite waiting
-      const connectionTimeout = setTimeout(() => {
-        if (ws.readyState === WebSocket.CONNECTING) {
-          console.error(`[BATCH_UPLOAD_SERVICE] Connection timeout for file: ${file.name} (${fileId})`);
-          ws.close();
-          observer.error(new Error('Connection timeout - server may be unavailable'));
-        }
-      }, 30000); // 30 second timeout
-      
       ws.onopen = () => {
-        clearTimeout(connectionTimeout);
-        const connectionTime = Date.now() - connectionStartTime;
-        console.log(`[DEBUG] 🔌 [BATCH_UPLOAD_SERVICE] WebSocket opened successfully in ${connectionTime}ms`);
-        
-        // Start sending file chunks
-        this.sliceAndSend(file, ws, observer);
+        this.sliceAndSend(file, ws);
       };
       
       ws.onmessage = (event) => {
-        console.log(`[DEBUG] 📨 [BATCH_UPLOAD_SERVICE] WebSocket message received:`, {
-          data: event.data,
-          type: event.type
-        });
-        
         try {
-          const message: any = JSON.parse(event.data);
-          
-          if (message.type === 'progress') {
-            observer.next(message as UploadEvent);
-          } else if (message.type === 'success') {
-            observer.next(message as UploadEvent);
+          const jsonMessage = JSON.parse(event.data);
+          observer.next(jsonMessage as UploadEvent);
+          if (jsonMessage.type === 'success') observer.complete();
+        } catch {
+          // Handle string format
+          const message = event.data;
+          if (message.startsWith('PROGRESS:')) {
+            observer.next({ type: 'progress', value: parseInt(message.split(':')[1]) });
+          } else if (message.startsWith('SUCCESS:')) {
+            observer.next({ type: 'success', value: message.split(':')[1] });
             observer.complete();
-          } else if (message.type === 'error') {
-            observer.error(new Error(message.value));
           }
-        } catch (e) {
-          console.error('[BATCH_UPLOAD_SERVICE] Failed to parse message from server:', event.data);
         }
       };
-
-      ws.onerror = (error) => {
-        clearTimeout(connectionTimeout);
-        console.error('[BATCH_UPLOAD_SERVICE] WebSocket error:', error);
-        observer.error(new Error('Connection to server failed.'));
-      };
-
-      ws.onclose = (event) => {
-        clearTimeout(connectionTimeout);
-        console.log(`[DEBUG] 🔌 [BATCH_UPLOAD_SERVICE] WebSocket closed:`, {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean
-        });
-        
-        if (!event.wasClean) {
-          observer.error(new Error('Lost connection to server during upload.'));
-        } else {
-          observer.complete();
-        }
-      };
-
-      return () => {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close();
-        }
-      };
+      
+      ws.onerror = () => observer.error(new Error('Connection failed'));
     });
   }
 
-  private sliceAndSend(file: File, ws: WebSocket, observer: Observer<UploadEvent>, start: number = 0): void {
-    const chunkSize = 4 * 1024 * 1024; // 4MB chunks
-    console.log(`[DEBUG] 🔪 sliceAndSend called - start: ${start}, file size: ${file.size}`);
+  private sliceAndSend(file: File, ws: WebSocket, start: number = 0): void {
+    const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
     
     if (start >= file.size) {
-      console.log(`[DEBUG] ✅ File upload complete, sending DONE message`);
       ws.send("DONE");
       return;
     }
 
-    const end = Math.min(start + chunkSize, file.size);
+    const end = Math.min(start + CHUNK_SIZE, file.size);
     const chunk = file.slice(start, end);
-    console.log(`[DEBUG] 📦 Chunk created - start: ${start}, end: ${end}, size: ${chunk.size} bytes`);
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (e.target?.result instanceof ArrayBuffer && ws.readyState === WebSocket.OPEN) {
-        // Convert ArrayBuffer to base64 and send as JSON
+      if (e.target?.result instanceof ArrayBuffer) {
         const bytes = new Uint8Array(e.target.result);
         let binary = '';
         for (let i = 0; i < bytes.byteLength; i++) {
@@ -131,53 +82,14 @@ export class BatchUploadService {
         }
         const base64Data = btoa(binary);
         
-        const chunkMessage = {
-          bytes: base64Data
-        };
+        ws.send(JSON.stringify({ bytes: base64Data }));
         
-        console.log(`[DEBUG] 📤 Sending JSON chunk message with base64 data, length: ${base64Data.length}`);
-        ws.send(JSON.stringify(chunkMessage));
-        
-        // Send next chunk
         setTimeout(() => {
-          this.sliceAndSend(file, ws, observer, end);
-        }, 100); // Small delay to prevent overwhelming the WebSocket
-      } else {
-        console.log(`[DEBUG] ❌ WebSocket not ready, state:`, ws.readyState);
+          this.sliceAndSend(file, ws, end);
+        }, 100);
       }
     };
     
-    reader.onerror = (e) => {
-      console.error(`[DEBUG] ❌ FileReader error:`, e);
-      observer.error(new Error('Failed to read file chunk'));
-    };
-    
-    console.log(`[DEBUG] 📖 Starting FileReader.readAsArrayBuffer for chunk`);
     reader.readAsArrayBuffer(chunk);
   }
-
-  // Cancel specific batch file
-  cancelBatchFile(fileId: string): boolean {
-    // This would need to be implemented based on how the server handles cancellation
-    // For now, we'll return false as the WebSocket connection is managed by the upload method
-    return false;
-  }
-}
-
-// Simple Observable implementation for WebSocket events
-class Observable<T> {
-  constructor(private subscribeFn: (observer: Observer<T>) => () => void) {}
-
-  subscribe(observer: Observer<T>): { unsubscribe: () => void } {
-    const cleanup = this.subscribeFn(observer);
-    return {
-      unsubscribe: cleanup
-    };
-  }
-}
-
-interface Observer<T> {
-  next: (value: T) => void;
-  error: (error: any) => void;
-  complete: () => void;
 }

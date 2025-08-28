@@ -1,73 +1,45 @@
-import { QuotaInfo } from '@/types/api';
-import { Loader2 } from 'lucide-react';
+import { QuotaInfo } from '@/services/uploadService';
 
 interface QuotaDisplayProps {
   quotaInfo: QuotaInfo | null;
-  loading: boolean;
 }
 
-export function QuotaDisplay({ quotaInfo, loading }: QuotaDisplayProps) {
-  if (loading) {
-    return (
-      <div className="p-3 mb-4 border bg-gradient-to-r from-bolt-light-blue/20 to-white border-bolt-blue/30 rounded-xl">
-        <div className="flex items-center justify-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin text-bolt-blue" />
-          <span className="text-sm text-slate-600">Loading quota information...</span>
-        </div>
-      </div>
-    );
-  }
+export function QuotaDisplay({ quotaInfo }: QuotaDisplayProps) {
+  if (!quotaInfo) return null;
 
-  if (!quotaInfo) {
-    return null;
-  }
+  // Add safety checks for numeric values
+  const currentUsage = quotaInfo.current_usage_gb ?? 0;
+  const dailyLimit = quotaInfo.daily_limit_gb ?? 0;
+  const remaining = quotaInfo.remaining_gb ?? 0;
+  const usagePercentage = quotaInfo.usage_percentage ?? 0;
 
-  const getQuotaStatusColor = (percentage: number): string => {
-    if (percentage >= 90) return 'bg-red-500';
-    if (percentage >= 75) return 'bg-orange-500';
-    if (percentage >= 50) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getQuotaStatusText = (percentage: number): string => {
-    if (percentage >= 90) return 'Critical';
-    if (percentage >= 75) return 'Warning';
-    if (percentage >= 50) return 'Moderate';
-    return 'Good';
+  const getColorClass = () => {
+    if (usagePercentage >= 90) return 'from-red-500 to-red-600';
+    if (usagePercentage >= 75) return 'from-orange-500 to-orange-600';
+    if (usagePercentage >= 50) return 'from-yellow-500 to-yellow-600';
+    return 'from-blue-500 to-blue-600';
   };
 
   return (
-    <div className="p-3 mb-4 border bg-gradient-to-r from-bolt-light-blue/20 to-white border-bolt-blue/30 rounded-xl">
+    <div className="p-3 mb-4 border bg-gradient-to-r from-blue-50/20 to-white border-blue-300/30 rounded-xl">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-slate-700">Daily Usage</span>
-        <span className="text-sm font-bold text-bolt-blue">
-          {quotaInfo.current_usage_gb.toFixed(1)}GB / {quotaInfo.daily_limit_gb}GB
+        <span className="text-sm font-bold text-blue-600">
+          {currentUsage.toFixed(1)}GB / {dailyLimit}GB
         </span>
       </div>
-      
-      <div className="w-full h-2 mb-2 rounded-full bg-slate-200">
+      <div className="w-full h-2 rounded-full bg-slate-200">
         <div 
-          className={`h-2 rounded-full transition-all duration-300 ${getQuotaStatusColor(quotaInfo.usage_percentage)}`}
-          style={{ width: `${Math.min(quotaInfo.usage_percentage, 100)}%` }}
-        ></div>
+          className={`bg-gradient-to-r ${getColorClass()} h-2 rounded-full transition-all duration-300`}
+          style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+        />
       </div>
-      
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">
-          {quotaInfo.remaining_gb.toFixed(1)}GB remaining today
-        </p>
-        <span className={`text-xs px-2 py-1 rounded-full text-white font-medium ${getQuotaStatusColor(quotaInfo.usage_percentage)}`}>
-          {getQuotaStatusText(quotaInfo.usage_percentage)}
+      <div className="flex items-center justify-between mt-2">
+        <span className="text-xs text-slate-500">
+          {remaining.toFixed(1)}GB remaining
         </span>
-      </div>
-      
-      <div className="mt-2 text-xs text-slate-500">
-        <span className={`inline-flex items-center px-2 py-1 rounded-full ${
-          quotaInfo.user_type === 'authenticated' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-gray-100 text-gray-800'
-        }`}>
-          {quotaInfo.user_type === 'authenticated' ? '✨ Premium User' : '👤 Guest User'}
+        <span className="px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full">
+          {quotaInfo.user_type === 'authenticated' ? 'Authenticated' : 'Guest'}
         </span>
       </div>
     </div>
