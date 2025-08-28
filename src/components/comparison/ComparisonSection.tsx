@@ -3,7 +3,7 @@
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Check, Star, X } from 'lucide-react';
-import React, 'useState } from 'react';
+import React, { useState } from 'react';
 
 const features = [
   { name: 'Free Storage', dropbox: '2GB', google: '15GB', mfc: '50GB' },
