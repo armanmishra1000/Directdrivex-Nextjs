@@ -92,7 +92,7 @@ export function RegisterForm() {
       : "border-slate-300 focus:border-bolt-blue focus:ring-bolt-blue/20";
 
   return (
-    <div className="w-full p-6 sm:p-8 bg-white/80 backdrop-blur-lg border border-white/30 shadow-2xl shadow-slate-900/10 rounded-2xl">
+    <div className="w-full p-6 sm:p-8 bg-white/[.95] backdrop-blur border border-white/[.2] shadow-glass rounded-2xl">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-slate-900">
           Create your account
@@ -298,7 +298,7 @@ export function RegisterForm() {
             <div className="w-full border-t border-slate-300"></div>
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white/80 px-2 text-slate-500">or</span>
+            <span className="bg-white/[.95] px-2 text-slate-500">or</span>
           </div>
         </div>
 
