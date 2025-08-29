@@ -12,19 +12,41 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GoogleIcon } from "@/components/icons/GoogleIcon";
-
-// NOTE: This is a visual component only. No form logic is included.
-// Validation classes are hardcoded for demonstration.
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {}
+  );
+
+  const validate = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    if (!password) {
+      newErrors.password = "Password is required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000); // Simulate API call
+    if (validate()) {
+      setLoading(true);
+      console.log("Submitting:", { email, password, rememberMe });
+      // Simulate API call
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000);
+    }
   };
 
   return (
@@ -54,16 +76,24 @@ export function LoginForm() {
               <input
                 id="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full h-11 pl-10 pr-4 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:border-bolt-blue focus:ring-bolt-blue/20"
+                className={cn(
+                  "w-full h-11 pl-10 pr-4 py-2 text-sm text-slate-900 bg-white border rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-bolt-blue/20",
+                  errors.email
+                    ? "border-red-500 bg-red-50/50 focus:border-red-500"
+                    : "border-slate-300 focus:border-bolt-blue"
+                )}
                 autoComplete="email"
               />
             </div>
-            {/* Example of an error message */}
-            {/* <div className="flex items-center text-sm text-red-600 gap-1.5">
-              <AlertCircle className="w-4 h-4" />
-              <span>Email is required</span>
-            </div> */}
+            {errors.email && (
+              <div className="flex items-center text-sm text-red-600 gap-1.5">
+                <AlertCircle className="w-4 h-4" />
+                <span>{errors.email}</span>
+              </div>
+            )}
           </div>
 
           {/* Password Field */}
@@ -82,8 +112,15 @@ export function LoginForm() {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="w-full h-11 pl-10 pr-10 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:border-bolt-blue focus:ring-bolt-blue/20"
+                className={cn(
+                  "w-full h-11 pl-10 pr-10 py-2 text-sm text-slate-900 bg-white border rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-bolt-blue/20",
+                  errors.password
+                    ? "border-red-500 bg-red-50/50 focus:border-red-500"
+                    : "border-slate-300 focus:border-bolt-blue"
+                )}
                 autoComplete="current-password"
               />
               <button
@@ -99,6 +136,12 @@ export function LoginForm() {
                 )}
               </button>
             </div>
+            {errors.password && (
+              <div className="flex items-center text-sm text-red-600 gap-1.5">
+                <AlertCircle className="w-4 h-4" />
+                <span>{errors.password}</span>
+              </div>
+            )}
           </div>
 
           {/* Remember Me & Forgot Password */}
@@ -107,6 +150,8 @@ export function LoginForm() {
               <input
                 id="rememberMe"
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 text-bolt-blue bg-slate-100 border-slate-300 rounded focus:ring-bolt-blue focus:ring-offset-0"
               />
               <label
@@ -127,10 +172,10 @@ export function LoginForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loading}
             className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bolt-blue disabled:bg-bolt-blue/50 disabled:cursor-not-allowed"
           >
-            {isLoading ? (
+            {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
@@ -156,7 +201,11 @@ export function LoginForm() {
           type="button"
           className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400"
         >
-          <GoogleIcon className="w-6 h-6 mr-3" />
+          <img
+            src="/assets/images/google.svg"
+            alt="Google"
+            className="w-6 h-6 mr-3"
+          />
           Continue with Google
         </button>
 

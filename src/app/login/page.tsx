@@ -5,17 +5,17 @@ const features = [
   {
     icon: <Upload className="w-6 h-6 text-white" />,
     title: "Unlimited Storage",
-    description: "Store files without any size limits",
+    description: "Store files without limits",
   },
   {
     icon: <Zap className="w-6 h-6 text-white" />,
     title: "Lightning Fast",
-    description: "Instant upload and download speeds",
+    description: "Instant upload and download",
   },
   {
     icon: <Lock className="w-6 h-6 text-white" />,
     title: "Secure & Private",
-    description: "End-to-end encryption for all files",
+    description: "End-to-end encryption",
   },
 ];
 
