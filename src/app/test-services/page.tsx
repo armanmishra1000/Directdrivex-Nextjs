@@ -23,7 +23,11 @@ export default function TestServicesPage() {
     try {
       const quota = await uploadService.getQuotaInfo();
       setQuotaInfo(quota);
-      addResult(`✅ Quota info loaded: ${quota.daily_limit_gb}GB limit, ${quota.current_usage_gb}GB used`);
+      if (quota) {
+        addResult(`✅ Quota info loaded: ${quota.daily_limit_gb}GB limit, ${quota.current_usage_gb}GB used`);
+      } else {
+        addResult(`❌ Quota info failed: No quota data received`);
+      }
     } catch (error: any) {
       addResult(`❌ Quota info failed: ${error.message}`);
     } finally {

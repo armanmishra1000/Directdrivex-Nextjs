@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Mail,
@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
+import { authService, RegisterData } from "@/services/authService";
+import { googleAuthService } from "@/services/googleAuthService";
+import { toastService } from "@/services/toastService";
 
 const formSchema = z
   .object({
@@ -28,6 +31,7 @@ const formSchema = z
       .email("Please enter a valid email address"),
     password: z
       .string()
+      .min(1, "Password is required")
       .min(6, "Password must be at least 6 characters long"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
@@ -38,10 +42,16 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function RegisterForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+function RegisterFormContent() {
+  const [loading, setLoading] = useState(false);
+  const [hidePassword, setHidePassword] = useState(true);
+  const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Increased toast duration for better readability (matching Angular)
+  const TOAST_DURATION = 2500;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -57,6 +67,7 @@ export function RegisterForm() {
     handleSubmit,
     formState: { errors, touchedFields },
     watch,
+    setError,
   } = form;
 
   const passwordValue = watch("password");
@@ -66,24 +77,111 @@ export function RegisterForm() {
   const doPasswordsMatch =
     passwordValue && confirmPasswordValue && passwordValue === confirmPasswordValue;
 
-  const onSubmit = async (data: FormValues) => {
-    setIsLoading(true);
-    console.log("Registration data:", data);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Simulate success or error
-    const isSuccess = Math.random() > 0.2; // 80% success rate
-
-    if (isSuccess) {
-      toast.success("Registration successful! Please log in.");
-      // router.push('/login');
-    } else {
-      toast.error("Registration failed. An account with this email may already exist.");
+  // Helper method to show toast and wait for completion (matching Angular pattern)
+  const showToastAndWait = async (type: 'success' | 'error' | 'warning' | 'info', message: string): Promise<void> => {
+    // Show toast with consistent duration
+    switch (type) {
+      case 'success':
+        toastService.success(message, TOAST_DURATION);
+        break;
+      case 'error':
+        toastService.error(message, TOAST_DURATION);
+        break;
+      case 'warning':
+        toastService.warning(message, TOAST_DURATION);
+        break;
+      case 'info':
+        toastService.info(message, TOAST_DURATION);
+        break;
     }
 
-    setIsLoading(false);
+    // Wait a moment for the toast to appear and start progress
+    await delay(100);
+    
+    // Wait for toast completion
+    await toastService.ensureToastCompletion();
+  };
+
+  // Helper method to create delays
+  const delay = (ms: number): Promise<void> => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  };
+
+  // Check for error messages from Google OAuth callback (matching Angular pattern)
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      showToastAndWait('error', decodeURIComponent(error));
+      // Clear the error from URL
+      router.replace('/register');
+    }
+  }, [searchParams, router]);
+
+  const onSubmit = async (data: FormValues): Promise<void> => {
+    if (!form.formState.isValid || loading) return;
+    
+    setLoading(true);
+    
+    const registerData: RegisterData = {
+      email: data.email,
+      password: data.password
+    };
+
+    try {
+      const response = await authService.register(registerData);
+      console.log('Registration successful:', response);
+      
+      // Show success toast with consistent duration
+      await showToastAndWait('success', 'Registration successful! Please log in.');
+      
+      // Navigate to login after successful registration
+      router.push('/login');
+      
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      // Show error toast with consistent duration and wait for completion
+      await showToastAndWait('error', error.message || 'Registration failed. Please try again.');
+      
+      // Reset loading state after error toast completes
+      setLoading(false);
+    }
+  };
+
+  // Google registration handler
+  const onGoogleRegister = (): void => {
+    googleAuthService.initiateGoogleLogin();
+  };
+
+  // Error message helpers matching Angular exactly
+  const getEmailErrorMessage = (): string => {
+    if (errors.email?.type === 'required') {
+      return 'Email is required';
+    }
+    if (errors.email?.type === 'email') {
+      return 'Please enter a valid email address';
+    }
+    return errors.email?.message || '';
+  };
+
+  const getPasswordErrorMessage = (): string => {
+    if (errors.password?.type === 'required') {
+      return 'Password is required';
+    }
+    if (errors.password?.type === 'min') {
+      return 'Password must be at least 6 characters long';
+    }
+    return errors.password?.message || '';
+  };
+
+  const getConfirmPasswordErrorMessage = (): string => {
+    if (errors.confirmPassword?.type === 'required') {
+      return 'Please confirm your password';
+    }
+    if (errors.confirmPassword?.message === 'Passwords do not match') {
+      return 'Passwords do not match';
+    }
+    return errors.confirmPassword?.message || '';
   };
 
   const getErrorClass = (field: keyof FormValues) =>
@@ -130,9 +228,9 @@ export function RegisterForm() {
               />
             </div>
             {errors.email && touchedFields.email && (
-              <div className="flex items-center text-sm text-red-600 gap-1.5">
+              <div className="flex items-center text-sm text-red-600 gap-1.5" role="alert" aria-live="polite">
                 <AlertCircle className="w-4 h-4" />
-                {errors.email.message}
+                {getEmailErrorMessage()}
               </div>
             )}
           </div>
@@ -152,7 +250,7 @@ export function RegisterForm() {
               />
               <input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type={hidePassword ? "password" : "text"}
                 {...register("password")}
                 placeholder="Create a password"
                 className={cn(
@@ -163,21 +261,21 @@ export function RegisterForm() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setHidePassword(!hidePassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={hidePassword ? "Show password" : "Hide password"}
               >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
+                {hidePassword ? (
                   <Eye className="w-5 h-5" />
+                ) : (
+                  <EyeOff className="w-5 h-5" />
                 )}
               </button>
             </div>
             {errors.password && touchedFields.password && (
-              <div className="flex items-center text-sm text-red-600 gap-1.5">
+              <div className="flex items-center text-sm text-red-600 gap-1.5" role="alert" aria-live="polite">
                 <AlertCircle className="w-4 h-4" />
-                {errors.password.message}
+                {getPasswordErrorMessage()}
               </div>
             )}
           </div>
@@ -197,7 +295,7 @@ export function RegisterForm() {
               />
               <input
                 id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
+                type={hideConfirmPassword ? "password" : "text"}
                 {...register("confirmPassword")}
                 placeholder="Confirm your password"
                 className={cn(
@@ -208,25 +306,25 @@ export function RegisterForm() {
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                onClick={() => setHideConfirmPassword(!hideConfirmPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 aria-label={
-                  showConfirmPassword
-                    ? "Hide confirm password"
-                    : "Show confirm password"
+                  hideConfirmPassword
+                    ? "Show confirm password"
+                    : "Hide confirm password"
                 }
               >
-                {showConfirmPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
+                {hideConfirmPassword ? (
                   <Eye className="w-5 h-5" />
+                ) : (
+                  <EyeOff className="w-5 h-5" />
                 )}
               </button>
             </div>
             {errors.confirmPassword && touchedFields.confirmPassword && (
-              <div className="flex items-center text-sm text-red-600 gap-1.5">
+              <div className="flex items-center text-sm text-red-600 gap-1.5" role="alert" aria-live="polite">
                 <AlertCircle className="w-4 h-4" />
-                {errors.confirmPassword.message}
+                {getConfirmPasswordErrorMessage()}
               </div>
             )}
           </div>
@@ -278,10 +376,16 @@ export function RegisterForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={!form.formState.isValid || loading}
             className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bolt-blue disabled:bg-bolt-blue/50 disabled:cursor-not-allowed"
+            aria-label={
+              loading
+                ? "Creating account, please wait"
+                : "Create your account"
+            }
+            aria-busy={loading}
           >
-            {isLoading ? (
+            {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
@@ -305,7 +409,9 @@ export function RegisterForm() {
         {/* Social Login */}
         <button
           type="button"
+          onClick={onGoogleRegister}
           className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400"
+          aria-label="Sign up with Google"
         >
           <GoogleIcon className="w-5 h-5 mr-3" />
           Continue with Google
@@ -325,5 +431,20 @@ export function RegisterForm() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function RegisterForm() {
+  return (
+    <Suspense fallback={
+      <div className="w-full p-6 sm:p-8 bg-white/[.95] backdrop-blur border border-white/[.2] shadow-glass rounded-2xl">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-bolt-blue" />
+          <h2 className="text-2xl font-bold text-slate-900">Loading...</h2>
+        </div>
+      </div>
+    }>
+      <RegisterFormContent />
+    </Suspense>
   );
 }
