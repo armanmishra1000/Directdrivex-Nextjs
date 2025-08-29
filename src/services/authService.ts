@@ -40,6 +40,11 @@ export interface AuthResponse {
   user?: User;
 }
 
+export interface PasswordChangeData {
+  current_password: string;
+  new_password: string;
+}
+
 export class AuthService {
   private readonly API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}/api/v1/auth`;
 
@@ -192,6 +197,40 @@ export class AuthService {
 
       const userData = await response.json();
       return userData;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+  }
+
+  async changePassword(passwordData: PasswordChangeData): Promise<any> {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${this.API_URL}/change-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(passwordData)
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.logout();
+          throw new Error('Authentication expired. Please login again.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Failed to change password');
+      }
+
+      return await response.json();
     } catch (error) {
       if (error instanceof Error) {
         throw error;

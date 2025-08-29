@@ -53,6 +53,19 @@ export default function TestServicesPage() {
     addResult(`👤 Current user: ${user ? user.email : 'None'}`);
   };
 
+  const testProfileLoading = async () => {
+    try {
+      addResult(`🔄 Testing profile loading...`);
+      const userData = await authService.loadUserProfile();
+      addResult(`✅ Profile loaded successfully: ${userData.email}`);
+      addResult(`📊 Storage used: ${userData.storage_used_gb}GB`);
+      addResult(`📁 Total files: ${userData.total_files}`);
+      addResult(`📈 File breakdown: Docs:${userData.file_type_breakdown?.documents || 0}, Images:${userData.file_type_breakdown?.images || 0}, Videos:${userData.file_type_breakdown?.videos || 0}, Other:${userData.file_type_breakdown?.other || 0}`);
+    } catch (error: any) {
+      addResult(`❌ Profile loading failed: ${error.message}`);
+    }
+  };
+
   const testBatchInitiation = async () => {
     try {
       const files = [
@@ -102,6 +115,13 @@ export default function TestServicesPage() {
             className="w-full bg-orange-500 text-white p-3 rounded-lg hover:bg-orange-600"
           >
             Test Batch Initiation
+          </button>
+          
+          <button
+            onClick={testProfileLoading}
+            className="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600"
+          >
+            Test Profile Loading
           </button>
         </div>
         

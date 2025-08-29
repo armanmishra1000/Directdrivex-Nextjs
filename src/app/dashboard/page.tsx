@@ -29,19 +29,19 @@ const getFileTypeInfo = (filename: string) => {
   
   if (['pdf'].includes(extension)) {
     return {
-      icon: <FileText className="w-5 h-5 text-red-600" strokeWidth={2} />,
+    icon: <FileText className="w-5 h-5 text-red-600" strokeWidth={2} />,
       bg: "bg-red-100"
     };
   }
   if (['doc', 'docx', 'txt'].includes(extension)) {
     return {
-      icon: <FileText className="w-5 h-5 text-blue-600" strokeWidth={2} />,
+    icon: <FileText className="w-5 h-5 text-blue-600" strokeWidth={2} />,
       bg: "bg-blue-100"
     };
   }
   if (['sql', 'db'].includes(extension)) {
     return {
-      icon: <Database className="w-5 h-5 text-green-600" strokeWidth={2} />,
+    icon: <Database className="w-5 h-5 text-green-600" strokeWidth={2} />,
       bg: "bg-green-100"
     };
   }
@@ -83,8 +83,8 @@ export default function DashboardPage() {
   // Load user profile and dashboard data
   const loadUserProfile = async () => {
     try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
       
       const userData = await authService.loadUserProfile();
       setUser(userData);

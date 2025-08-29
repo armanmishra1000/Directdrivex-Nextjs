@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   User,
   CloudUpload,
@@ -19,83 +20,246 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authService, User as AuthUser, PasswordChangeData } from "@/services/authService";
+import { toastService } from "@/services/toastService";
 
-// Mock data for the profile page
-const mockUserProfile = {
-  email: "user@directdrive.com",
-  accountType: "Basic Account",
-  memberSince: "2023-01-15T10:00:00Z",
-  storageUsedGB: 6.8,
-  storageBreakdown: {
-    documents: 1.2,
-    images: 3.5,
-    videos: 2.0,
-    other: 0.1,
-  },
-};
+// Premium features list
+const premiumFeatures = [
+  "Unlimited storage",
+  "ZIP download for multiple files", 
+  "Batch upload capabilities",
+  "Advanced sharing options",
+  "Priority customer support",
+  "Secure cloud storage with Google Drive integration"
+];
 
 export default function ProfilePage() {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<typeof mockUserProfile | null>(
-    null
-  );
+  const [profileError, setProfileError] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
-    current: "",
-    new: "",
-    confirm: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
+  const [passwordErrors, setPasswordErrors] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
+  const [passwordTouched, setPasswordTouched] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
+  const [hideCurrentPassword, setHideCurrentPassword] = useState(true);
+  const [hideNewPassword, setHideNewPassword] = useState(true);
+  const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
   const [passwordUpdateLoading, setPasswordUpdateLoading] = useState(false);
+  
+  const router = useRouter();
 
-  const fetchProfile = () => {
+  // Load user profile from AuthService
+  const loadUserProfile = async () => {
     setProfileLoading(true);
-    setProfileError(null);
-    setTimeout(() => {
-      // To test error state, uncomment the line below
-      // setProfileError("Network error. Please check your connection.");
-      setUserProfile(mockUserProfile);
+    setProfileError(false);
+    
+    try {
+      const userData = await authService.loadUserProfile();
+      setUser(userData);
+    } catch (error: any) {
+      // Check if it's an authentication error
+      if (error.message?.includes('Authentication expired')) {
+        router.push('/login');
+        return;
+      }
+      
+      setProfileError(true);
+      toastService.error('Failed to load profile. Please try again.', 2500);
+    } finally {
       setProfileLoading(false);
-    }, 1500);
+    }
   };
-
+  
+  // Check authentication and load profile on mount
   useEffect(() => {
-    fetchProfile();
+    // CRITICAL: Check authentication first
+    if (!authService.isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    
+    // CRITICAL: Always load fresh user data from API
+    loadUserProfile();
   }, []);
+  
+  // Retry loading profile
+  const retryLoadProfile = () => {
+    loadUserProfile();
+  };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Validation functions matching Angular exactly
+  const getCurrentPasswordErrorMessage = (): string => {
+    if (!passwordForm.currentPassword) {
+      return 'Current password is required';
+    }
+    return '';
+  };
+  
+  const getNewPasswordErrorMessage = (): string => {
+    if (!passwordForm.newPassword) {
+      return 'New password is required';
+    }
+    if (passwordForm.newPassword.length < 6) {
+      return 'Password must be at least 6 characters long';
+    }
+    return '';
+  };
+  
+  const getConfirmPasswordErrorMessage = (): string => {
+    if (!passwordForm.confirmPassword) {
+      return 'Please confirm your new password';
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return 'Passwords do not match';
+    }
+    return '';
+  };
+  
+  // Form handlers
+  const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (passwordErrors[name as keyof typeof passwordErrors]) {
+      setPasswordErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
-
-  const toggleShowPassword = (field: keyof typeof showPasswords) => {
-    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  
+  const handlePasswordInputBlur = (field: keyof typeof passwordForm) => {
+    setPasswordTouched(prev => ({ ...prev, [field]: true }));
+    
+    // Validate on blur
+    let error = '';
+    if (field === 'currentPassword') {
+      error = getCurrentPasswordErrorMessage();
+    } else if (field === 'newPassword') {
+      error = getNewPasswordErrorMessage();
+    } else if (field === 'confirmPassword') {
+      error = getConfirmPasswordErrorMessage();
+    }
+    
+    setPasswordErrors(prev => ({ ...prev, [field]: error }));
   };
-
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setPasswordTouched({
+      currentPassword: true,
+      newPassword: true,
+      confirmPassword: true
+    });
+    
+    // Validate form
+    const errors = {
+      currentPassword: getCurrentPasswordErrorMessage(),
+      newPassword: getNewPasswordErrorMessage(),
+      confirmPassword: getConfirmPasswordErrorMessage()
+    };
+    
+    setPasswordErrors(errors);
+    
+    if (Object.values(errors).some(error => error !== '')) {
+      return;
+    }
+    
     setPasswordUpdateLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setPasswordUpdateLoading(false);
+    try {
+      const passwordData: PasswordChangeData = {
+        current_password: passwordForm.currentPassword,
+        new_password: passwordForm.newPassword
+      };
+      
+      await authService.changePassword(passwordData);
+      toastService.success('Password changed successfully!', 2500);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordErrors({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordTouched({ currentPassword: false, newPassword: false, confirmPassword: false });
       setIsChangingPassword(false);
-      setPasswordForm({ current: "", new: "", confirm: "" });
-    }, 2000);
+    } catch (error: any) {
+      console.error('Password change error:', error);
+      toastService.error(error.message || 'Failed to change password', 2500);
+    } finally {
+      setPasswordUpdateLoading(false);
+    }
   };
 
-  const premiumFeatures = [
-    "Unlimited storage",
-    "ZIP download",
-    "Batch upload",
-    "Advanced sharing",
-    "Priority support",
-    "Secure cloud storage",
-  ];
+  // Utility functions matching Angular exactly
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    
+    if (i >= sizes.length) {
+      return `${(bytes / Math.pow(1024, sizes.length - 1)).toFixed(2)} ${sizes[sizes.length - 1]}`;
+    }
+    
+    return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2)} ${sizes[i]}`;
+  };
+  
+  const getMemberSinceDate = (): string => {
+    if (!user) return 'Loading...';
+    
+    if (user.created_at) {
+      return new Date(user.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long'
+      });
+    }
+    
+    return new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long'
+    });
+  };
+  
+  const getAccountType = (): string => {
+    return 'Basic';
+  };
+  
+  // Navigation functions
+  const navigateHome = () => {
+    router.push('/');
+  };
+  
+  const handleLogout = async () => {
+    const confirmLogout = confirm('Are you sure you want to logout?');
+    if (confirmLogout) {
+      authService.logout();
+      await toastService.ensureToastCompletion();
+      toastService.success('Logged out successfully', 2500);
+      router.push('/');
+    }
+  };
+  
+  const togglePasswordChange = () => {
+    setIsChangingPassword(!isChangingPassword);
+    if (!isChangingPassword) {
+      // Reset form when opening
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordErrors({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordTouched({ currentPassword: false, newPassword: false, confirmPassword: false });
+    }
+  };
+  
+  const handleFeatureComingSoon = (feature: string) => {
+    toastService.info(`${feature} feature coming soon`, 2500);
+  };
 
   const cardClasses =
     "backdrop-blur-md bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6";
@@ -133,9 +297,11 @@ export default function ProfilePage() {
         <h3 className="text-xl font-semibold text-bolt-black mb-2">
           Failed to Load Profile
         </h3>
-        <p className="text-bolt-medium-black mb-6">{profileError}</p>
+        <p className="text-bolt-medium-black mb-6">
+          We couldn't load your profile information. Please try again.
+        </p>
         <button
-          onClick={fetchProfile}
+          onClick={retryLoadProfile}
           className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-colors"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -153,9 +319,9 @@ export default function ProfilePage() {
           <User className="w-6 h-6 text-white" />
         </div>
         <div>
-          <p className="font-semibold text-bolt-black">{userProfile?.email}</p>
-          <span className="inline-block mt-1 text-xs font-medium text-white px-2.5 py-1 rounded-full bg-gradient-to-r from-bolt-blue to-bolt-mid-blue">
-            ⭐ {userProfile?.accountType}
+          <h3 className="text-lg font-semibold text-bolt-black">{user?.email || "Loading..."}</h3>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-blue-300 text-white mt-1">
+            ⭐ {getAccountType()} Account
           </span>
         </div>
       </div>
@@ -170,40 +336,35 @@ export default function ProfilePage() {
             </h3>
           </div>
           <div>
-            <p className="text-2xl font-bold text-bolt-black">
-              {userProfile?.storageUsedGB} GB
-            </p>
-            <p className="text-sm text-bolt-medium-black">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-bolt-medium-black">Used Storage</span>
+              <span className="font-medium text-bolt-black">{user?.storage_used_gb || 0} GB</span>
+            </div>
+            <p className="text-xs text-bolt-medium-black mt-2">
               Unlimited storage available
             </p>
           </div>
-          <div className="border-t border-white/50 pt-4 space-y-2 text-sm">
-            <h4 className="font-semibold text-bolt-black mb-2">
-              Storage Breakdown
+          <div className="border-t border-bolt-light-blue pt-4">
+            <h4 className="text-base font-medium text-bolt-black mb-3">
+              Storage breakdown
             </h4>
-            <div className="flex justify-between">
-              <span className="text-bolt-medium-black">Documents</span>
-              <span className="font-medium text-bolt-black">
-                {userProfile?.storageBreakdown.documents} GB
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-bolt-medium-black">Images</span>
-              <span className="font-medium text-bolt-black">
-                {userProfile?.storageBreakdown.images} GB
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-bolt-medium-black">Videos</span>
-              <span className="font-medium text-bolt-black">
-                {userProfile?.storageBreakdown.videos} GB
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-bolt-medium-black">Other</span>
-              <span className="font-medium text-bolt-black">
-                {userProfile?.storageBreakdown.other} GB
-              </span>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-bolt-medium-black">Documents</span>
+                <span className="text-bolt-black">{formatFileSize(user?.file_type_breakdown?.documents || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-bolt-medium-black">Images</span>
+                <span className="text-bolt-black">{formatFileSize(user?.file_type_breakdown?.images || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-bolt-medium-black">Videos</span>
+                <span className="text-bolt-black">{formatFileSize(user?.file_type_breakdown?.videos || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-bolt-medium-black">Other</span>
+                <span className="text-bolt-black">{formatFileSize(user?.file_type_breakdown?.other || 0)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -217,24 +378,18 @@ export default function ProfilePage() {
             </h3>
           </div>
           <div className="space-y-3 text-sm">
-            <div>
-              <p className="text-bolt-medium-black">Email Address</p>
-              <p className="font-medium text-bolt-black">{userProfile?.email}</p>
-            </div>
-            <div>
-              <p className="text-bolt-medium-black">Account Type</p>
-              <p className="font-medium text-bolt-black">
-                {userProfile?.accountType}
-              </p>
-            </div>
-            <div>
-              <p className="text-bolt-medium-black">Member Since</p>
-              <p className="font-medium text-bolt-black">
-                {new Date(
-                  userProfile?.memberSince || ""
-                ).toLocaleDateString()}
-              </p>
-            </div>
+                      <div>
+            <label className="text-sm text-gray-500 font-medium">Email Address</label>
+            <p className="text-bolt-black">{user?.email || "Loading..."}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 font-medium">Account Type</label>
+            <p className="text-bolt-black">{getAccountType()} Account</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 font-medium">Member Since</label>
+            <p className="text-bolt-black">{getMemberSinceDate()}</p>
+          </div>
           </div>
         </div>
       </div>
@@ -266,112 +421,151 @@ export default function ProfilePage() {
       {/* Password Change Form */}
       {isChangingPassword && (
         <div className={cn(cardClasses, "md:col-span-2")}>
-          <h3 className="text-lg font-semibold text-bolt-black mb-4">
-            Change Your Password
-          </h3>
-          <form onSubmit={handleUpdatePassword} className="space-y-4">
-            <div className="space-y-1">
-              <label
-                htmlFor="current"
-                className="text-sm font-medium text-bolt-black"
-              >
+          <div className="flex items-center space-x-2 mb-4">
+            <h3 className="text-lg font-semibold text-bolt-black">
+              Change Password
+            </h3>
+          </div>
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            {/* Current Password Field */}
+            <div className="space-y-2">
+              <label htmlFor="currentPassword" className="text-sm font-medium text-slate-900">
                 Current Password
               </label>
-              <div className="relative">
+              <div className="input-with-icon relative">
                 <input
-                  id="current"
-                  name="current"
-                  type={showPasswords.current ? "text" : "password"}
-                  value={passwordForm.current}
-                  onChange={handlePasswordChange}
-                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-bolt-black bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
+                  id="currentPassword"
+                  name="currentPassword"
+                  type={hideCurrentPassword ? "password" : "text"}
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordInputChange}
+                  onBlur={() => handlePasswordInputBlur('currentPassword')}
+                  placeholder="Enter current password"
+                  className={cn(
+                    "w-full h-11 pl-10 pr-12 py-2 text-sm text-slate-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue transition-colors",
+                    passwordErrors.currentPassword && passwordTouched.currentPassword
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-300"
+                  )}
+                  autoComplete="current-password"
+                  required
                 />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <button
                   type="button"
-                  onClick={() => toggleShowPassword("current")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-medium-black hover:text-bolt-black"
+                  onClick={() => setHideCurrentPassword(!hideCurrentPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center w-5 h-5"
                 >
-                  {showPasswords.current ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {hideCurrentPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
               </div>
+              {passwordErrors.currentPassword && passwordTouched.currentPassword && (
+                <div className="flex items-center gap-2 text-red-600 text-sm mt-1">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  {passwordErrors.currentPassword}
+                </div>
+              )}
             </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="new"
-                className="text-sm font-medium text-bolt-black"
-              >
+            
+            {/* New Password Field */}
+            <div className="space-y-2">
+              <label htmlFor="newPassword" className="text-sm font-medium text-slate-900">
                 New Password
               </label>
-              <div className="relative">
+              <div className="input-with-icon relative">
                 <input
-                  id="new"
-                  name="new"
-                  type={showPasswords.new ? "text" : "password"}
-                  value={passwordForm.new}
-                  onChange={handlePasswordChange}
-                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-bolt-black bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
+                  id="newPassword"
+                  name="newPassword"
+                  type={hideNewPassword ? "password" : "text"}
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordInputChange}
+                  onBlur={() => handlePasswordInputBlur('newPassword')}
+                  placeholder="Enter new password"
+                  className={cn(
+                    "w-full h-11 pl-10 pr-12 py-2 text-sm text-slate-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue transition-colors",
+                    passwordErrors.newPassword && passwordTouched.newPassword
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-300"
+                  )}
+                  autoComplete="new-password"
+                  required
                 />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <button
                   type="button"
-                  onClick={() => toggleShowPassword("new")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-medium-black hover:text-bolt-black"
+                  onClick={() => setHideNewPassword(!hideNewPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center w-5 h-5"
                 >
-                  {showPasswords.new ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {hideNewPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
               </div>
+              {passwordErrors.newPassword && passwordTouched.newPassword && (
+                <div className="flex items-center gap-2 text-red-600 text-sm mt-1">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  {passwordErrors.newPassword}
+                </div>
+              )}
             </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="confirm"
-                className="text-sm font-medium text-bolt-black"
-              >
+            
+            {/* Confirm New Password Field */}
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-900">
                 Confirm New Password
               </label>
-              <div className="relative">
+              <div className="input-with-icon relative">
                 <input
-                  id="confirm"
-                  name="confirm"
-                  type={showPasswords.confirm ? "text" : "password"}
-                  value={passwordForm.confirm}
-                  onChange={handlePasswordChange}
-                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-bolt-black bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={hideConfirmPassword ? "password" : "text"}
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordInputChange}
+                  onBlur={() => handlePasswordInputBlur('confirmPassword')}
+                  placeholder="Confirm new password"
+                  className={cn(
+                    "w-full h-11 pl-10 pr-12 py-2 text-sm text-slate-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue transition-colors",
+                    passwordErrors.confirmPassword && passwordTouched.confirmPassword
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-300"
+                  )}
+                  autoComplete="new-password"
+                  required
                 />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <button
                   type="button"
-                  onClick={() => toggleShowPassword("confirm")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-medium-black hover:text-bolt-black"
+                  onClick={() => setHideConfirmPassword(!hideConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center w-5 h-5"
                 >
-                  {showPasswords.confirm ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {hideConfirmPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
               </div>
+              {passwordErrors.confirmPassword && passwordTouched.confirmPassword && (
+                <div className="flex items-center gap-2 text-red-600 text-sm mt-1">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  {passwordErrors.confirmPassword}
+                </div>
+              )}
             </div>
-            <div className="flex justify-end space-x-3 pt-2">
+            
+            {/* Submit Button */}
+            <div className="flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={() => setIsChangingPassword(false)}
-                className="px-4 py-2 text-sm font-medium text-bolt-medium-black bg-background hover:bg-border rounded-lg"
+                onClick={togglePasswordChange}
+                className="px-10 bg-gray-300 rounded-md text-bolt-black py-2"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={passwordUpdateLoading}
-                className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-bolt-blue to-bolt-mid-blue hover:opacity-90 rounded-lg disabled:opacity-50"
+                disabled={passwordUpdateLoading || Object.values(passwordErrors).some(error => error !== '')}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white cursor-pointer font-medium px-8 py-2 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {passwordUpdateLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Updating...
+                  </>
                 ) : (
                   "Update Password"
                 )}
@@ -392,33 +586,33 @@ export default function ProfilePage() {
           </div>
           <div className="space-y-2">
             <button
-              onClick={() => setIsChangingPassword(!isChangingPassword)}
-              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-background transition-colors"
+              onClick={togglePasswordChange}
+              className="w-full flex items-center text-left p-3 rounded-lg hover:bg-slate-50 transition-colors border border-gray-300 shadow-sm"
             >
-              <span className="font-medium text-bolt-black">
-                Change Password
+              <Lock className="w-4 h-4 mr-3 text-bolt-blue" />
+              <span className="text-sm text-bolt-black">
+                {isChangingPassword ? "Cancel Password Change" : "Change Password"}
               </span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <button
+              onClick={() => handleFeatureComingSoon('Two-Factor Authentication')}
               disabled
-              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center text-left p-3 rounded-lg hover:bg-slate-50 transition-colors border border-gray-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="font-medium text-bolt-black">
+              <Lock className="w-4 h-4 mr-3 text-bolt-blue" />
+              <span className="text-sm text-bolt-black">
                 Two-Factor Authentication
               </span>
-              <span className="text-xs bg-border text-muted-foreground px-2 py-0.5 rounded-full">
-                Coming Soon
-              </span>
             </button>
             <button
+              onClick={() => handleFeatureComingSoon('Download My Data')}
               disabled
-              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center text-left p-3 rounded-lg hover:bg-slate-50 transition-colors border border-gray-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="font-medium text-bolt-black">
+              <Loader2 className="w-4 h-4 mr-3 text-bolt-blue" />
+              <span className="text-sm text-bolt-black">
                 Download My Data
               </span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -432,16 +626,22 @@ export default function ProfilePage() {
             </h3>
           </div>
           <div className="space-y-3">
-            <button className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-bolt-blue to-bolt-mid-blue hover:opacity-90 rounded-lg transition-opacity">
-              <Home className="w-4 h-4 mr-2" />
+            <button 
+              onClick={navigateHome}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium px-8 py-2 rounded-xl transition-all"
+            >
               Back to Home
             </button>
-            <button className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-bolt-blue border border-bolt-blue hover:bg-bolt-blue/10 rounded-lg transition-colors">
-              <FileCog className="w-4 h-4 mr-2" />
+            <button 
+              onClick={navigateHome}
+              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-bolt-blue border border-bolt-blue hover:bg-bolt-blue/10 rounded-lg transition-colors"
+            >
               Manage Files
             </button>
-            <button className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-destructive border border-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-              <LogOut className="w-4 h-4 mr-2" />
+            <button 
+              onClick={handleLogout}
+              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 border border-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
               Logout
             </button>
           </div>
