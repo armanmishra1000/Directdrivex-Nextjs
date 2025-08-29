@@ -1,8 +1,27 @@
+export interface FileTypeBreakdown {
+  documents: number;
+  images: number;
+  videos: number;
+  other: number;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  storage_quota_gb: number;
+  role?: string;
+  is_admin?: boolean;
+  storage_limit_bytes?: number;  // Optional for unlimited
+  storage_used_bytes: number;
+  storage_used_gb: number;
+  storage_limit_gb?: number;  // Optional for unlimited
+  storage_percentage?: number;  // Optional for unlimited
+  remaining_storage_bytes?: number;  // Optional for unlimited
+  remaining_storage_gb?: number;  // Optional for unlimited
+  file_type_breakdown: FileTypeBreakdown;
+  total_files: number;
+  created_at?: string;
+  storage_quota_gb: number; // Keep for backward compatibility
 }
 
 export interface RegisterData {
@@ -43,7 +62,24 @@ export class AuthService {
         id: payload.sub,
         email: payload.email,
         name: payload.name,
-        storage_quota_gb: payload.storage_quota_gb
+        storage_quota_gb: payload.storage_quota_gb || 10,
+        // Default values for required fields - these will be loaded from API
+        storage_used_bytes: payload.storage_used_bytes || 0,
+        storage_used_gb: payload.storage_used_gb || 0,
+        storage_limit_gb: payload.storage_limit_gb || payload.storage_quota_gb || 10,
+        storage_percentage: payload.storage_percentage || 0,
+        remaining_storage_bytes: payload.remaining_storage_bytes || 0,
+        remaining_storage_gb: payload.remaining_storage_gb || 0,
+        file_type_breakdown: payload.file_type_breakdown || {
+          documents: 0,
+          images: 0,
+          videos: 0,
+          other: 0
+        },
+        total_files: payload.total_files || 0,
+        role: payload.role,
+        is_admin: payload.is_admin || false,
+        created_at: payload.created_at
       };
     } catch {
       return null;
@@ -122,6 +158,41 @@ export class AuthService {
       return data;
     } catch (error) {
       // Re-throw the error to preserve the message
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+  }
+
+  async loadUserProfile(): Promise<User> {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${this.API_URL}/users/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid, clear it
+          this.logout();
+          throw new Error('Authentication expired. Please login again.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Failed to load user profile');
+      }
+
+      const userData = await response.json();
+      return userData;
+    } catch (error) {
       if (error instanceof Error) {
         throw error;
       }

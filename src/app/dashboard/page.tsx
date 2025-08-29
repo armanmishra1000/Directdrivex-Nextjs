@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Upload,
@@ -15,76 +16,231 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authService, User } from "@/services/authService";
+import { toastService } from "@/services/toastService";
+import { UploadService } from "@/services/uploadService";
 
-// Mock data to populate the dashboard
-const mockUser = {
-  email: "user@directdrive.com",
-  totalFiles: 1258,
-  storageUsedGB: 6.8,
-  storageLimitGB: 10,
+// Initialize services
+const uploadService = new UploadService();
+
+// File type icons configuration
+const getFileTypeInfo = (filename: string) => {
+  const extension = filename.split('.').pop()?.toLowerCase() || '';
+  
+  if (['pdf'].includes(extension)) {
+    return {
+      icon: <FileText className="w-5 h-5 text-red-600" strokeWidth={2} />,
+      bg: "bg-red-100"
+    };
+  }
+  if (['doc', 'docx', 'txt'].includes(extension)) {
+    return {
+      icon: <FileText className="w-5 h-5 text-blue-600" strokeWidth={2} />,
+      bg: "bg-blue-100"
+    };
+  }
+  if (['sql', 'db'].includes(extension)) {
+    return {
+      icon: <Database className="w-5 h-5 text-green-600" strokeWidth={2} />,
+      bg: "bg-green-100"
+    };
+  }
+  // Default
+  return {
+    icon: <FileText className="w-5 h-5 text-slate-600" strokeWidth={2} />,
+    bg: "bg-slate-100"
+  };
 };
 
-const recentFiles = [
-  {
-    type: "pdf",
-    name: "presentation-final.pdf",
-    size: "2.4 MB",
-    time: "2 hours ago",
-  },
-  {
-    type: "doc",
-    name: "project-requirements.docx",
-    size: "1.8 MB",
-    time: "4 hours ago",
-  },
-  {
-    type: "sql",
-    name: "database-backup.sql",
-    size: "15.2 MB",
-    time: "1 day ago",
-  },
-];
+interface DashboardFile {
+  id: string;
+  filename: string;
+  size: number;
+  uploaded_at: string;
+  content_type?: string;
+}
 
-const fileTypeIcons: { [key: string]: { icon: React.ReactNode; bg: string } } = {
-  pdf: {
-    icon: <FileText className="w-5 h-5 text-red-600" strokeWidth={2} />,
-    bg: "bg-red-100",
-  },
-  doc: {
-    icon: <FileText className="w-5 h-5 text-blue-600" strokeWidth={2} />,
-    bg: "bg-blue-100",
-  },
-  sql: {
-    icon: <Database className="w-5 h-5 text-green-600" strokeWidth={2} />,
-    bg: "bg-green-100",
-  },
-};
+interface DashboardStats {
+  total_files: number;
+  storage_used_gb: number;
+  storage_limit_gb?: number;
+  storage_percentage?: number;
+  remaining_storage_gb?: number;
+  recent_files?: DashboardFile[];
+}
+
+
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recentFiles, setRecentFiles] = useState<DashboardFile[]>([]);
+  
+  const router = useRouter();
 
-  const fetchData = () => {
-    setLoading(true);
-    setError(null);
-    // Simulate data fetching
-    const timer = setTimeout(() => {
+  // Load user profile and dashboard data
+  const loadUserProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const userData = await authService.loadUserProfile();
+      setUser(userData);
+      
+      // Calculate storage statistics from user data
+      const stats: DashboardStats = {
+        total_files: userData.total_files || 0,
+        storage_used_gb: userData.storage_used_gb || 0,
+        storage_limit_gb: userData.storage_limit_gb || userData.storage_quota_gb || 10,
+        storage_percentage: userData.storage_percentage,
+        remaining_storage_gb: userData.remaining_storage_gb
+      };
+      
+      setDashboardStats(stats);
+      
+      // Load recent files (placeholder for now)
+      await loadRecentFiles();
+      
+    } catch (error: any) {
+      console.error('Dashboard error:', error);
+      
+      if (error.message?.includes('Authentication expired')) {
+        // Redirect to login on auth failure
+        router.push('/login');
+        return;
+      }
+      
+      const errorMessage = error.message || 'Failed to load dashboard data';
+      setError(errorMessage);
+      toastService.error(errorMessage, 2500);
+    } finally {
       setLoading(false);
-      // To test error state, uncomment the line below
-      // setError("Failed to load dashboard data. Please try again.");
-    }, 1500);
-    return () => clearTimeout(timer);
+    }
   };
-
-  useEffect(fetchData, []);
+  
+  // Load recent files (mock implementation for now)
+  const loadRecentFiles = async () => {
+    try {
+      // For now, use mock data until API endpoint is available
+      const mockRecentFiles: DashboardFile[] = [
+        {
+          id: "1",
+          filename: "presentation-final.pdf",
+          size: 2516582, // 2.4 MB in bytes
+          uploaded_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+          content_type: "application/pdf"
+        },
+        {
+          id: "2",
+          filename: "project-requirements.docx",
+          size: 1887437, // 1.8 MB in bytes
+          uploaded_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+          content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        },
+        {
+          id: "3",
+          filename: "database-backup.sql",
+          size: 15941917, // 15.2 MB in bytes
+          uploaded_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+          content_type: "application/sql"
+        }
+      ];
+      
+      setRecentFiles(mockRecentFiles);
+    } catch (error) {
+      console.error('Failed to load recent files:', error);
+      // Don't show error for recent files failure
+    }
+  };
+  
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+  
+  // Format relative time
+  const formatRelativeTime = (dateString: string): string => {
+    const now = new Date();
+    const uploadTime = new Date(dateString);
+    const diffMs = now.getTime() - uploadTime.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffHours < 1) {
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      return diffMins < 1 ? 'Just now' : `${diffMins} minutes ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    } else {
+      return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+    }
+  };
+  
+  // Check authentication and load data on component mount
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    
+    loadUserProfile();
+  }, [router]);
+  
+  // Button click handlers
+  const handleUploadFiles = () => {
+    router.push('/');
+  };
+  
+  const handleQuickUpload = () => {
+    router.push('/');
+  };
+  
+  const handleCreateFolder = () => {
+    toastService.info('Folder creation feature coming soon', 2500);
+  };
+  
+  const handleShareLink = () => {
+    toastService.info('Link sharing feature coming soon', 2500);
+  };
+  
+  const handleDownloadAll = () => {
+    toastService.info('Bulk download feature coming soon', 2500);
+  };
+  
+  const handleUpgradeStorage = () => {
+    toastService.info('Storage upgrade feature coming soon', 2500);
+  };
+  
+  const handleViewAllFiles = () => {
+    toastService.info('File browser feature coming soon', 2500);
+  };
+  
+  const handleFileDownload = (file: DashboardFile) => {
+    toastService.info(`Download feature for ${file.filename} coming soon`, 2500);
+  };
+  
+  const handleFileShare = (file: DashboardFile) => {
+    toastService.info(`Share feature for ${file.filename} coming soon`, 2500);
+  };
 
   const handleRetry = () => {
-    fetchData();
+    loadUserProfile();
   };
 
-  const storagePercentage =
-    (mockUser.storageUsedGB / mockUser.storageLimitGB) * 100;
-  const remainingStorageGB = mockUser.storageLimitGB - mockUser.storageUsedGB;
+  // Calculate storage metrics from real user data
+  const storageUsedGB = dashboardStats?.storage_used_gb || 0;
+  const storageLimitGB = dashboardStats?.storage_limit_gb || 10;
+  const storagePercentage = dashboardStats?.storage_percentage || 
+    (storageLimitGB > 0 ? (storageUsedGB / storageLimitGB) * 100 : 0);
+  const remainingStorageGB = dashboardStats?.remaining_storage_gb || 
+    (storageLimitGB - storageUsedGB);
+  const totalFiles = dashboardStats?.total_files || 0;
 
   if (loading) {
     return (
@@ -124,15 +280,21 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
               <p className="text-slate-600 mt-1">
-                Welcome back, {mockUser.email}
+                Welcome back, {user?.email || 'User'}
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-bolt-blue bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+              <button 
+                onClick={handleUploadFiles}
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-bolt-blue bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
                 <Plus className="w-4 h-4 mr-2" strokeWidth={2} />
                 Upload Files
               </button>
-              <button className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-colors">
+              <button 
+                onClick={handleQuickUpload}
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-colors"
+              >
                 <Upload className="w-4 h-4 mr-2" strokeWidth={2} />
                 Quick Upload
               </button>
@@ -146,7 +308,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 font-medium">Total Files</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{mockUser.totalFiles.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{totalFiles.toLocaleString()}</p>
                   <p className="text-xs text-slate-500 mt-1">Files in your account</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-bolt-blue/10">
@@ -159,8 +321,8 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 font-medium">Storage Used</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{`${mockUser.storageUsedGB} GB`}</p>
-                  <p className="text-xs text-slate-500 mt-1">{`of ${mockUser.storageLimitGB} GB available`}</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{`${storageUsedGB.toFixed(1)} GB`}</p>
+                  <p className="text-xs text-slate-500 mt-1">{`of ${storageLimitGB} GB available`}</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-bolt-cyan/10">
                   <Database className="w-6 h-6 text-bolt-cyan" strokeWidth={2} />
@@ -209,28 +371,39 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold text-slate-900">
                   Recent Files
                 </h3>
-                <a href="#" className="text-bolt-blue hover:underline text-sm font-medium">
+                <button 
+                  onClick={handleViewAllFiles}
+                  className="text-bolt-blue hover:underline text-sm font-medium"
+                >
                   View all
-                </a>
+                </button>
               </div>
               <div className="divide-y divide-slate-100 -mx-6">
                 {recentFiles.map((file, index) => {
-                  const fileIconInfo = fileTypeIcons[file.type];
+                  const fileIconInfo = getFileTypeInfo(file.filename);
                   return (
-                    <div key={index} className="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
+                    <div key={file.id || index} className="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
                       <div className="flex items-center space-x-4">
                         <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", fileIconInfo.bg)}>
                           {fileIconInfo.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">{file.name}</p>
-                          <p className="text-xs text-slate-500">{file.size} &bull; {file.time}</p>
+                          <p className="text-sm font-medium text-slate-900 truncate">{file.filename}</p>
+                          <p className="text-xs text-slate-500">{formatFileSize(file.size)} &bull; {formatRelativeTime(file.uploaded_at)}</p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                          <button 
+                            onClick={() => handleFileDownload(file)}
+                            className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+                            title="Download file"
+                          >
                             <Download className="w-4 h-4" strokeWidth={2} />
                           </button>
-                          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                          <button 
+                            onClick={() => handleFileShare(file)}
+                            className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+                            title="Share file"
+                          >
                             <Share2 className="w-4 h-4" strokeWidth={2} />
                           </button>
                         </div>
@@ -249,15 +422,24 @@ export default function DashboardPage() {
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
-                  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
+                  <button 
+                    onClick={handleCreateFolder}
+                    className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors"
+                  >
                     <span className="mr-3"><FolderPlus className="w-5 h-5" /></span>
                     Create New Folder
                   </button>
-                  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
+                  <button 
+                    onClick={handleShareLink}
+                    className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors"
+                  >
                     <span className="mr-3"><Share2 className="w-5 h-5" /></span>
                     Share Link
                   </button>
-                  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
+                  <button 
+                    onClick={handleDownloadAll}
+                    className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors"
+                  >
                     <span className="mr-3"><Download className="w-5 h-5" /></span>
                     Download All
                   </button>
@@ -272,7 +454,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Used</span>
-                    <span className="font-medium text-slate-900">{mockUser.storageUsedGB} GB</span>
+                    <span className="font-medium text-slate-900">{storageUsedGB.toFixed(1)} GB</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Available</span>
@@ -285,7 +467,10 @@ export default function DashboardPage() {
                   <p className="text-xs text-center text-slate-500">
                     {storagePercentage.toFixed(0)}% of your storage is used
                   </p>
-                  <button className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-colors">
+                  <button 
+                    onClick={handleUpgradeStorage}
+                    className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-colors"
+                  >
                     Upgrade Storage
                   </button>
                 </div>
