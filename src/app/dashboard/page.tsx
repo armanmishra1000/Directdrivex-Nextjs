@@ -45,7 +45,7 @@ const recentFiles = [
   },
 ];
 
-const fileTypeIcons = {
+const fileTypeIcons: { [key: string]: { icon: React.ReactNode; bg: string } } = {
   pdf: {
     icon: <FileText className="w-5 h-5 text-red-600" strokeWidth={2} />,
     bg: "bg-red-100",
@@ -64,7 +64,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true);
+    setError(null);
     // Simulate data fetching
     const timer = setTimeout(() => {
       setLoading(false);
@@ -72,7 +74,13 @@ export default function DashboardPage() {
       // setError("Failed to load dashboard data. Please try again.");
     }, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  };
+
+  useEffect(fetchData, []);
+
+  const handleRetry = () => {
+    fetchData();
+  };
 
   const storagePercentage =
     (mockUser.storageUsedGB / mockUser.storageLimitGB) * 100;
@@ -96,7 +104,7 @@ export default function DashboardPage() {
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-lg text-red-600 mb-6">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={handleRetry}
             className="inline-flex items-center justify-center px-6 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg transition-colors"
           >
             Retry
@@ -109,7 +117,7 @@ export default function DashboardPage() {
   return (
     <>
       <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 -z-10" />
-      <div className="relative z-10 min-h-screen font-inter">
+      <div className="relative z-10 min-h-screen">
         <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {/* Page Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
@@ -134,39 +142,63 @@ export default function DashboardPage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Stat Card: Total Files */}
-            <StatCard
-              title="Total Files"
-              value={mockUser.totalFiles.toLocaleString()}
-              subtitle="Files in your account"
-              icon={<FileText className="w-6 h-6 text-bolt-blue" strokeWidth={2} />}
-              iconBg="bg-bolt-blue/10"
-            />
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Total Files</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{mockUser.totalFiles.toLocaleString()}</p>
+                  <p className="text-xs text-slate-500 mt-1">Files in your account</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-bolt-blue/10">
+                  <FileText className="w-6 h-6 text-bolt-blue" strokeWidth={2} />
+                </div>
+              </div>
+            </div>
             {/* Stat Card: Storage Used */}
-            <StatCard
-              title="Storage Used"
-              value={`${mockUser.storageUsedGB} GB`}
-              subtitle={`of ${mockUser.storageLimitGB} GB available`}
-              icon={<Database className="w-6 h-6 text-bolt-cyan" strokeWidth={2} />}
-              iconBg="bg-bolt-cyan/10"
-            >
-              <ProgressBar percentage={storagePercentage} color="bg-bolt-cyan" />
-            </StatCard>
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Storage Used</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{`${mockUser.storageUsedGB} GB`}</p>
+                  <p className="text-xs text-slate-500 mt-1">{`of ${mockUser.storageLimitGB} GB available`}</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-bolt-cyan/10">
+                  <Database className="w-6 h-6 text-bolt-cyan" strokeWidth={2} />
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="w-full bg-slate-200 rounded-full h-2 relative overflow-hidden">
+                  <div className="h-2 rounded-full bg-bolt-cyan" style={{ width: `${storagePercentage}%` }} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                </div>
+              </div>
+            </div>
             {/* Stat Card: Remaining Storage */}
-            <StatCard
-              title="Remaining Storage"
-              value={`${remainingStorageGB.toFixed(1)} GB`}
-              subtitle="storage available"
-              icon={<CloudUpload className="w-6 h-6 text-green-500" strokeWidth={2} />}
-              iconBg="bg-green-500/10"
-            />
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Remaining Storage</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{`${remainingStorageGB.toFixed(1)} GB`}</p>
+                  <p className="text-xs text-slate-500 mt-1">storage available</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10">
+                  <CloudUpload className="w-6 h-6 text-green-600" strokeWidth={2} />
+                </div>
+              </div>
+            </div>
             {/* Stat Card: Usage Percentage */}
-            <StatCard
-              title="Usage Percentage"
-              value={`${storagePercentage.toFixed(0)}%`}
-              subtitle="of storage used"
-              icon={<Network className="w-6 h-6 text-bolt-purple" strokeWidth={2} />}
-              iconBg="bg-bolt-purple/10"
-            />
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Usage Percentage</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{`${storagePercentage.toFixed(0)}%`}</p>
+                  <p className="text-xs text-slate-500 mt-1">of storage used</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-bolt-purple/10">
+                  <Network className="w-6 h-6 text-bolt-purple" strokeWidth={2} />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Main Content Grid */}
@@ -177,17 +209,35 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold text-slate-900">
                   Recent Files
                 </h3>
-                <a
-                  href="#"
-                  className="text-bolt-blue hover:underline text-sm font-medium"
-                >
+                <a href="#" className="text-bolt-blue hover:underline text-sm font-medium">
                   View all
                 </a>
               </div>
               <div className="divide-y divide-slate-100 -mx-6">
-                {recentFiles.map((file, index) => (
-                  <FileRow key={index} file={file} />
-                ))}
+                {recentFiles.map((file, index) => {
+                  const fileIconInfo = fileTypeIcons[file.type];
+                  return (
+                    <div key={index} className="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
+                      <div className="flex items-center space-x-4">
+                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", fileIconInfo.bg)}>
+                          {fileIconInfo.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{file.name}</p>
+                          <p className="text-xs text-slate-500">{file.size} &bull; {file.time}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                            <Download className="w-4 h-4" strokeWidth={2} />
+                          </button>
+                          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                            <Share2 className="w-4 h-4" strokeWidth={2} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -199,15 +249,18 @@ export default function DashboardPage() {
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
-                  <QuickActionButton icon={<FolderPlus className="w-5 h-5" />}>
+                  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
+                    <span className="mr-3"><FolderPlus className="w-5 h-5" /></span>
                     Create New Folder
-                  </QuickActionButton>
-                  <QuickActionButton icon={<Share2 className="w-5 h-5" />}>
+                  </button>
+                  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
+                    <span className="mr-3"><Share2 className="w-5 h-5" /></span>
                     Share Link
-                  </QuickActionButton>
-                  <QuickActionButton icon={<Download className="w-5 h-5" />}>
+                  </button>
+                  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
+                    <span className="mr-3"><Download className="w-5 h-5" /></span>
                     Download All
-                  </QuickActionButton>
+                  </button>
                 </div>
               </div>
 
@@ -219,21 +272,14 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Used</span>
-                    <span className="font-medium text-slate-900">
-                      {mockUser.storageUsedGB} GB
-                    </span>
+                    <span className="font-medium text-slate-900">{mockUser.storageUsedGB} GB</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Available</span>
-                    <span className="font-medium text-slate-900">
-                      {remainingStorageGB.toFixed(1)} GB
-                    </span>
+                    <span className="font-medium text-slate-900">{remainingStorageGB.toFixed(1)} GB</span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-3 relative overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-bolt-blue to-bolt-cyan h-3 rounded-full"
-                      style={{ width: `${storagePercentage}%` }}
-                    />
+                    <div className="bg-gradient-to-r from-bolt-blue to-bolt-cyan h-3 rounded-full" style={{ width: `${storagePercentage}%` }} />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
                   </div>
                   <p className="text-xs text-center text-slate-500">
@@ -251,84 +297,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-// Sub-components for cleaner structure
-
-const StatCard = ({ title, value, subtitle, icon, iconBg, children }: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  iconBg: string;
-  children?: React.ReactNode;
-}) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-slate-500 font-medium">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
-        <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
-      </div>
-      <div
-        className={cn(
-          "w-12 h-12 rounded-lg flex items-center justify-center",
-          iconBg
-        )}
-      >
-        {icon}
-      </div>
-    </div>
-    {children && <div className="mt-4">{children}</div>}
-  </div>
-);
-
-const ProgressBar = ({ percentage, color }: { percentage: number; color: string }) => (
-  <div className="w-full bg-slate-200 rounded-full h-2 relative overflow-hidden">
-    <div
-      className={cn("h-2 rounded-full", color)}
-      style={{ width: `${percentage}%` }}
-    />
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
-  </div>
-);
-
-const FileRow = ({ file }: { file: (typeof recentFiles)[0] }) => {
-  const { icon, bg } = fileTypeIcons[file.type as keyof typeof fileTypeIcons];
-  return (
-    <div className="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
-      <div className="flex items-center space-x-4">
-        <div
-          className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-            bg
-          )}
-        >
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-900 truncate">
-            {file.name}
-          </p>
-          <p className="text-xs text-slate-500">
-            {file.size} &bull; {file.time}
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
-            <Download className="w-4 h-4" strokeWidth={2} />
-          </button>
-          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
-            <Share2 className="w-4 h-4" strokeWidth={2} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const QuickActionButton = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
-  <button className="w-full inline-flex items-center justify-start px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-bolt-blue hover:border-bolt-blue transition-colors">
-    <span className="mr-3">{icon}</span>
-    {children}
-  </button>
-);
