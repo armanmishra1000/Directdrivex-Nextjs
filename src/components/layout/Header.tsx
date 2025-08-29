@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { CloudUpload, User as UserIcon, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authService, User } from "@/services/authService";
 
 export function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn]
+= useState(false);
   const [displayName, setDisplayName] = useState("User");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -31,7 +33,6 @@ export function Header() {
 
     checkAuth();
 
-    // Re-check auth state on window focus or storage change for better sync
     window.addEventListener("storage", checkAuth);
     window.addEventListener("focus", checkAuth);
 
@@ -47,6 +48,13 @@ export function Header() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [pathname]);
 
   const handleLogout = () => {
     authService.logout();
@@ -123,10 +131,10 @@ export function Header() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-50 transition-all duration-300",
+          "sticky top-0 z-50 transition-all duration-300 backdrop-blur-xl bg-white/95",
           isScrolled
-            ? "backdrop-blur-xl bg-white/95 shadow-lg border-b border-slate-200/80"
-            : "bg-white/80"
+            ? "shadow-lg border-b border-slate-200/80"
+            : "border-b border-transparent"
         )}
       >
         <div className="container mx-auto px-4">
