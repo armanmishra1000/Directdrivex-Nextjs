@@ -49,6 +49,11 @@ export interface ForgotPasswordData {
   email: string;
 }
 
+export interface ResetPasswordData {
+  reset_token: string;
+  new_password: string;
+}
+
 export class AuthService {
   private readonly API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}/api/v1/auth`;
 
@@ -277,6 +282,59 @@ export class AuthService {
             errorMessage = 'No account found with this email address.';
           } else if (response.status === 429) {
             errorMessage = 'Too many requests. Please try again later.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      // Re-throw the error to preserve the message
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+  }
+
+  async resetPassword(resetData: ResetPasswordData): Promise<any> {
+    try {
+      const response = await fetch(`${this.API_URL}/reset-password`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json' 
+        },
+        body: JSON.stringify(resetData)
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to reset password. Please try again.';
+        
+        try {
+          const errorData = await response.json();
+          // Handle different error response formats
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch {
+          // If JSON parsing fails, use status-based messages
+          if (response.status === 400) {
+            errorMessage = 'Invalid password format.';
+          } else if (response.status === 404) {
+            errorMessage = 'Reset token not found or expired.';
+          } else if (response.status === 422) {
+            errorMessage = 'Invalid reset token or password requirements not met.';
           } else if (response.status >= 500) {
             errorMessage = 'Server error. Please try again later.';
           }
