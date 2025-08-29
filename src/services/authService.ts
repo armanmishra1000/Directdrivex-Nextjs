@@ -10,6 +10,11 @@ export interface RegisterData {
   password: string;
 }
 
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: string;
@@ -45,9 +50,9 @@ export class AuthService {
     }
   }
 
-  async login(credentials: { email: string; password: string }): Promise<AuthResponse> {
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const formData = new FormData();
-    formData.append('username', credentials.email);
+    formData.append('username', credentials.username);
     formData.append('password', credentials.password);
     
     const response = await fetch(`${this.API_URL}/token`, {

@@ -18,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GoogleIcon } from "@/components/icons/GoogleIcon";
+
 import { authService, RegisterData } from "@/services/authService";
 import { googleAuthService } from "@/services/googleAuthService";
 import { toastService } from "@/services/toastService";
@@ -413,7 +413,11 @@ function RegisterFormContent() {
           className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400"
           aria-label="Sign up with Google"
         >
-          <GoogleIcon className="w-5 h-5 mr-3" />
+          <img
+            src="/assets/images/google.svg"
+            alt="Google"
+            className="w-5 h-5 mr-3"
+          />
           Continue with Google
         </button>
 
