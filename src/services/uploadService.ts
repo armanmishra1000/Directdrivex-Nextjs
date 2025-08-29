@@ -62,16 +62,37 @@ export class UploadService {
     return { valid: true };
   }
 
-  async getQuotaInfo(): Promise<QuotaInfo> {
+  async getQuotaInfo(): Promise<QuotaInfo | null> {
     try {
       const response = await fetch(`${this.apiUrl}/api/v1/upload/quota-info`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return response.json();
+      
+      const data = await response.json();
+      
+      // Handle different API response formats
+      if (data && typeof data === 'object') {
+        // Check if it's an error message
+        if (data.message) {
+          console.warn('Quota API returned message:', data.message);
+          return null;
+        }
+        // Check if it's valid quota data
+        else if (typeof data.current_usage_gb === 'number' && 
+                 typeof data.daily_limit_gb === 'number' && 
+                 typeof data.remaining_gb === 'number' && 
+                 typeof data.usage_percentage === 'number') {
+          return data as QuotaInfo;
+        }
+      }
+      
+      console.warn('Invalid quota data format:', data);
+      return null;
+      
     } catch (error) {
       console.error("API call to getQuotaInfo failed:", error);
       if (process.env.NODE_ENV === 'development') {
         console.warn("Serving mock quota data because API is unavailable.");
-        return Promise.resolve({
+        return {
           daily_limit_bytes: 2147483648,
           daily_limit_gb: 2,
           current_usage_bytes: 536870912,
@@ -80,9 +101,9 @@ export class UploadService {
           remaining_gb: 1.5,
           usage_percentage: 25,
           user_type: 'anonymous',
-        });
+        };
       }
-      throw error;
+      return null;
     }
   }
 

@@ -6,10 +6,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from "sonner";
 import { getFileTypeInfo } from '../ui/FileIcon';
 import { cn } from '@/lib/utils';
-import { UploadService, QuotaInfo } from '@/services/uploadService';
+import { UploadService } from '@/services/uploadService';
 import { BatchUploadService } from '@/services/batchUploadService';
 import { AuthService } from '@/services/authService';
-import { QuotaDisplay } from '../ui/QuotaDisplay';
 import { Subscription } from '@/lib/observable';
 
 const MAX_FILES = 5;
@@ -36,42 +35,14 @@ export function UploadWidget() {
   const [batchFiles, setBatchFiles] = useState<FileState[]>([]);
   const [batchDownloadLink, setBatchDownloadLink] = useState<string | null>(null);
 
-  // Quota and auth state
-  const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
-  const [quotaLoading, setQuotaLoading] = useState(false);
+  // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Subscriptions for cleanup
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [batchSubscriptions, setBatchSubscriptions] = useState<Subscription[]>([]);
 
-  // Load quota info on mount
-  useEffect(() => {
-    const loadQuota = async () => {
-      setQuotaLoading(true);
-      try {
-        const quota = await uploadService.getQuotaInfo();
-        // Validate that quota has required properties before setting
-        if (quota && 
-            typeof quota.current_usage_gb === 'number' && 
-            typeof quota.daily_limit_gb === 'number' && 
-            typeof quota.remaining_gb === 'number' && 
-            typeof quota.usage_percentage === 'number') {
-          setQuotaInfo(quota);
-        } else {
-          console.warn('Quota data missing required properties:', quota);
-          setQuotaInfo(null);
-        }
-      } catch (error) {
-        console.error('Failed to load quota:', error);
-        setQuotaInfo(null);
-        // Don't show error toast for quota loading failures
-      } finally {
-        setQuotaLoading(false);
-      }
-    };
-    loadQuota();
-  }, []);
+  // No quota loading
 
   // Check authentication status
   useEffect(() => {
@@ -223,6 +194,7 @@ export function UploadWidget() {
     setBatchState('idle');
     setBatchFiles([]);
     setBatchDownloadLink(null);
+    setCompletionToastShown(false); // Reset the toast shown flag
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -244,17 +216,6 @@ export function UploadWidget() {
           const fileId = typeof event.value === 'string' ? event.value.split('/').pop() : event.value;
           setDownloadLink(`${window.location.origin}/download/${fileId}`);
           toast.success('File uploaded successfully!');
-          
-          // Refresh quota info after successful upload
-          const refreshQuota = async () => {
-            try {
-              const quota = await uploadService.getQuotaInfo();
-              setQuotaInfo(quota);
-            } catch (error) {
-              console.error('Failed to refresh quota:', error);
-            }
-          };
-          refreshQuota();
         }
       },
       error: (err) => {
@@ -336,24 +297,31 @@ export function UploadWidget() {
     }
   };
 
+  // Track if batch completion toast has been shown
+  const [completionToastShown, setCompletionToastShown] = useState(false);
+
   const checkBatchCompletion = (batchId: string) => {
-    const allCompleted = batchFiles.every(f => f.state === 'success' || f.state === 'error');
-    if (allCompleted) {
-      setBatchState('success');
-      setBatchDownloadLink(`${window.location.origin}/batch-download/${batchId}`);
-      toast.success('All files uploaded successfully!');
+    // Use the latest batchFiles state by calling it within a setState callback
+    setBatchFiles(currentFiles => {
+      const allCompleted = currentFiles.every(f => f.state === 'success' || f.state === 'error');
       
-      // Refresh quota info after successful batch upload
-      const refreshQuota = async () => {
-        try {
-          const quota = await uploadService.getQuotaInfo();
-          setQuotaInfo(quota);
-        } catch (error) {
-          console.error('Failed to refresh quota:', error);
-        }
-      };
-      refreshQuota();
-    }
+      if (allCompleted && !completionToastShown) {
+        // Only when all files are complete, set the batch state to success
+        console.log('All files completed, setting batch state to success');
+        setBatchState('success');
+        setBatchDownloadLink(`${window.location.origin}/batch-download/${batchId}`);
+        
+        // Only show toast if it hasn't been shown already
+        toast.success('All files uploaded successfully!');
+        setCompletionToastShown(true);
+      } else if (!allCompleted) {
+        console.log('Not all files completed yet, current states:', 
+          currentFiles.map(f => ({ name: f.file.name, state: f.state })));
+      }
+      
+      // Return the files unchanged, we're just checking state here
+      return currentFiles;
+    });
   };
 
   // Cancel upload implementation
@@ -382,10 +350,8 @@ export function UploadWidget() {
     setTimeout(() => {
       // Cancel all uploading files
       setBatchFiles(files => files.map(f => {
-        if (f.state === 'uploading') {
-          return { ...f, state: 'cancelled', error: 'Upload cancelled by user' };
-        } else if (f.state === 'pending') {
-          return { ...f, state: 'cancelled', error: 'Upload cancelled by user' };
+        if (f.state === 'uploading' || f.state === 'pending') {
+          return { ...f, state: 'cancelled' as const, error: 'Upload cancelled by user' };
         }
         return f;
       }));
@@ -394,7 +360,7 @@ export function UploadWidget() {
       batchSubscriptions.forEach(sub => sub.unsubscribe());
       setBatchSubscriptions([]);
       
-    setBatchState('cancelled');
+      setBatchState('cancelled');
       toast.success('All uploads cancelled successfully');
       
       setTimeout(() => {
@@ -405,18 +371,31 @@ export function UploadWidget() {
 
   // Cancel single batch file
   const handleCancelSingleBatchFile = (fileId: string) => {
-    setBatchFiles(files => files.map(f => 
-      f.id === fileId 
-        ? { ...f, state: 'cancelled', error: 'Upload cancelled by user' }
-        : f
-    ));
-    
-    // Check if all files are now cancelled/completed
-    const allCompleted = batchFiles.every(f => f.state === 'success' || f.state === 'error' || f.state === 'cancelled');
-    if (allCompleted) {
-      setBatchState('success');
-      toast.success('All files processed!');
-    }
+    setBatchFiles(files => {
+      const updatedFiles = files.map(f => 
+        f.id === fileId 
+          ? { ...f, state: 'cancelled' as const, error: 'Upload cancelled by user' }
+          : f
+      );
+      
+      // Check if all files are now cancelled/completed using the updated files array
+      const allCompleted = updatedFiles.every(f => 
+        f.state === 'success' || f.state === 'error' || f.state === 'cancelled'
+      );
+      
+      if (allCompleted && !completionToastShown) {
+        console.log('All files are now either complete or cancelled');
+        // Need to call this in setTimeout to ensure state update finishes first
+        setTimeout(() => {
+          setBatchState('success');
+          // Only show toast if not shown already
+          toast.success('All files processed!');
+          setCompletionToastShown(true);
+        }, 0);
+      }
+      
+      return updatedFiles;
+    });
   };
 
   const copyLink = async (link: string) => {
@@ -457,8 +436,8 @@ export function UploadWidget() {
   const IdleState = () => (
     <div
       className={cn(
-        "bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:border-blue-500 hover:bg-blue-50/20 hover:shadow-lg group",
-        { 'border-blue-500 bg-blue-50/20 shadow-lg animate-pulse': isDragOver }
+        "p-4 transition-all duration-300 border-2 border-dashed enhanced-drop-zone bg-slate-50 border-slate-300 rounded-2xl sm:p-6 hover:border-bolt-blue hover:bg-bolt-blue/5 hover:shadow-lg group",
+        { 'border-bolt-blue bg-bolt-blue/5 shadow-lg animate-pulse': isDragOver }
       )}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -471,25 +450,61 @@ export function UploadWidget() {
         onChange={(e) => handleFileSelect(e.target.files)} 
         className="hidden" 
         multiple 
+        max="5"
       />
+
       <div className="text-center">
-        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 transition-transform rounded-full sm:w-16 sm:h-16 sm:mb-4 bg-gradient-to-br from-blue-500/10 to-blue-500/20 group-hover:scale-105 animate-float">
-          <CloudUpload className="w-6 h-6 text-blue-500 sm:w-8 sm:h-8" />
+        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 transition-transform rounded-full sm:w-16 sm:h-16 sm:mb-4 bg-gradient-to-br from-bolt-blue/10 to-bolt-blue/20 hover:scale-105 animate-float">
+          <CloudUpload className="w-6 h-6 sm:w-8 sm:h-8 text-bolt-blue" />
         </div>
+
         <h3 className="mb-2 text-base font-semibold sm:text-lg text-slate-900">
           {isDragOver ? "✨ Drop files here" : "Drag & Drop up to 5 files here"}
         </h3>
+
+        {/* OR Separator */}
         <div className="flex items-center justify-center my-4 sm:my-6">
           <div className="flex-1 h-px bg-slate-300"></div>
-          <span className="px-3 text-xs font-medium sm:px-4 sm:text-sm text-slate-500">OR</span>
+          <span className={cn(
+            "px-3 text-xs font-medium transition-colors duration-300 sm:px-4 sm:text-sm text-slate-500",
+            isDragOver ? "bg-bolt-blue/5" : "group-hover:bg-bolt-blue/5"
+          )}>OR</span>
           <div className="flex-1 h-px bg-slate-300"></div>
         </div>
+
+        {/* Browse Files Button */}
         <div className="mb-3 sm:mb-4">
-          <button className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-200 transform hover:-translate-y-0.5">
+          <button className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-bolt-blue to-bolt-mid-blue rounded-xl shadow-lg hover:shadow-xl hover:from-bolt-blue hover:to-bolt-mid-blue focus:outline-none transition-all duration-200 transform hover:-translate-y-0.5">
             <Plus className="w-3 h-3 mr-1 sm:w-4 sm:h-4 sm:mr-2" />
             Browse Files
           </button>
         </div>
+
+        {/* File Type Icons */}
+        <div className="flex items-center justify-center mb-3 space-x-2 file-type-icons sm:space-x-3 sm:mb-4 opacity-60">
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-center w-5 h-5 px-4 bg-red-100 rounded file-type-icon sm:w-6 sm:h-6">
+              <span className="text-xs font-bold text-red-600">PDF</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-center w-5 h-5 px-4 bg-purple-100 rounded file-type-icon sm:w-6 sm:h-6">
+              <span className="text-xs font-bold text-purple-600">ZIP</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-center w-5 h-5 px-4 bg-green-100 rounded file-type-icon sm:w-6 sm:h-6">
+              <span className="text-xs font-bold text-green-600">MP4</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-center w-5 h-5 px-4 bg-blue-100 rounded file-type-icon sm:w-6 sm:h-6">
+              <span className="text-xs font-bold text-blue-600">DOC</span>
+            </div>
+          </div>
+          <div className="text-xs text-slate-400 sm:text-sm">+more</div>
+        </div>
+
         <div className="space-y-1">
           <div className="text-xs text-slate-400">
             Try it now - no signup required for 2GB (max 5 files)
@@ -1028,31 +1043,6 @@ export function UploadWidget() {
   );
 
   const renderContent = () => {
-    // Show quota display if available and not loading
-    if (quotaInfo && !quotaLoading && currentState === 'idle' && batchState === 'idle') {
-      return (
-        <>
-          <QuotaDisplay quotaInfo={quotaInfo} />
-          <IdleState />
-        </>
-      );
-    }
-    
-    // Show loading state for quota
-    if (quotaLoading && currentState === 'idle' && batchState === 'idle') {
-      return (
-        <>
-          <div className="p-3 mb-4 border bg-gradient-to-r from-blue-50/20 to-white border-blue-300/30 rounded-xl">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-              <span className="text-sm text-slate-600">Loading quota information...</span>
-            </div>
-          </div>
-          <IdleState />
-        </>
-      );
-    }
-
     // Single file states
     if (currentState === 'selected') return <FileSelectedState />;
     if (currentState === 'uploading') return <UploadProgressState />;
@@ -1072,7 +1062,26 @@ export function UploadWidget() {
 
   return (
     <div className="w-full h-full">
-        {renderContent()}
+      {/* Quick Upload Header */}
+      <div className="mb-4 text-center sm:mb-6">
+        <div className="inline-flex items-center px-2 py-1 mb-3 space-x-2 text-xs font-medium text-bolt-blue rounded-full bg-blue-50 sm:px-3 sm:text-sm sm:mb-4">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+            />
+          </svg>
+          <span>Quick Upload</span>
+        </div>
+        <h3 className="mb-1 text-lg font-bold sm:text-xl text-slate-900 sm:mb-2">
+          Try it now
+        </h3>
+        <p className="text-sm sm:text-base text-slate-500">
+          2GB limit for guests
+        </p>
+      </div>
+      
+      {renderContent()}
     </div>
   );
 }
