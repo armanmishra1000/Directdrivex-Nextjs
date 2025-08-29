@@ -1,10 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { toast } from "sonner";
 import Link from "next/link";
 import {
   Mail,
@@ -18,61 +14,21 @@ import {
 import { cn } from "@/lib/utils";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
 
-const formSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+// NOTE: This is a visual component only. No form logic is included.
+// Validation classes are hardcoded for demonstration.
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      rememberMe: false,
-    },
-  });
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, touchedFields },
-  } = form;
-
-  const onSubmit = async (data: FormValues) => {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsLoading(true);
-    console.log("Login data:", data);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Simulate success or error
-    if (data.email === "error@example.com") {
-      toast.error("Login failed. Please check your credentials.");
-    } else {
-      toast.success("Login successful! Redirecting...");
-      // router.push('/dashboard');
-    }
-
-    setIsLoading(false);
+    setTimeout(() => setIsLoading(false), 2000); // Simulate API call
   };
 
-  const getErrorClass = (field: keyof FormValues) =>
-    errors[field] && touchedFields[field]
-      ? "border-red-500 bg-red-50/50 focus:border-red-500 focus:ring-red-500/20"
-      : "border-slate-300 focus:border-bolt-blue focus:ring-bolt-blue/20";
-
   return (
-    <div className="w-full p-6 sm:p-8 bg-white/[.95] backdrop-blur border border-white/[.2] shadow-glass rounded-2xl">
+    <div className="w-full p-6 sm:p-8 bg-white/95 backdrop-blur border border-white/20 shadow-xl rounded-2xl">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-slate-900">
           Sign in to your account
@@ -81,7 +37,7 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           {/* Email Field */}
           <div className="space-y-1.5">
             <label
@@ -98,21 +54,16 @@ export function LoginForm() {
               <input
                 id="email"
                 type="email"
-                {...register("email")}
                 placeholder="Enter your email"
-                className={cn(
-                  "w-full h-11 pl-10 pr-4 py-2 text-sm text-slate-900 bg-white border rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2",
-                  getErrorClass("email")
-                )}
+                className="w-full h-11 pl-10 pr-4 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:border-bolt-blue focus:ring-bolt-blue/20"
                 autoComplete="email"
               />
             </div>
-            {errors.email && touchedFields.email && (
-              <div className="flex items-center text-sm text-red-600 gap-1.5">
-                <AlertCircle className="w-4 h-4" />
-                {errors.email.message}
-              </div>
-            )}
+            {/* Example of an error message */}
+            {/* <div className="flex items-center text-sm text-red-600 gap-1.5">
+              <AlertCircle className="w-4 h-4" />
+              <span>Email is required</span>
+            </div> */}
           </div>
 
           {/* Password Field */}
@@ -131,12 +82,8 @@ export function LoginForm() {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                {...register("password")}
                 placeholder="Enter your password"
-                className={cn(
-                  "w-full h-11 pl-10 pr-10 py-2 text-sm text-slate-900 bg-white border rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2",
-                  getErrorClass("password")
-                )}
+                className="w-full h-11 pl-10 pr-10 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:border-bolt-blue focus:ring-bolt-blue/20"
                 autoComplete="current-password"
               />
               <button
@@ -152,12 +99,6 @@ export function LoginForm() {
                 )}
               </button>
             </div>
-            {errors.password && touchedFields.password && (
-              <div className="flex items-center text-sm text-red-600 gap-1.5">
-                <AlertCircle className="w-4 h-4" />
-                {errors.password.message}
-              </div>
-            )}
           </div>
 
           {/* Remember Me & Forgot Password */}
@@ -166,7 +107,6 @@ export function LoginForm() {
               <input
                 id="rememberMe"
                 type="checkbox"
-                {...register("rememberMe")}
                 className="w-4 h-4 text-bolt-blue bg-slate-100 border-slate-300 rounded focus:ring-bolt-blue focus:ring-offset-0"
               />
               <label
@@ -178,7 +118,7 @@ export function LoginForm() {
             </div>
             <Link
               href="/forgot-password"
-              className="font-medium text-bolt-blue hover:underline"
+              className="font-medium text-bolt-blue hover:text-bolt-blue/80"
             >
               Forgot password?
             </Link>
@@ -207,16 +147,16 @@ export function LoginForm() {
             <div className="w-full border-t border-slate-300"></div>
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white/[.95] px-2 text-slate-500">or</span>
+            <span className="bg-white/95 px-2 text-slate-500">or</span>
           </div>
         </div>
 
         {/* Social Login */}
         <button
           type="button"
-          className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400"
+          className="w-full h-11 flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400"
         >
-          <GoogleIcon className="w-5 h-5 mr-3" />
+          <GoogleIcon className="w-6 h-6 mr-3" />
           Continue with Google
         </button>
 
@@ -226,7 +166,7 @@ export function LoginForm() {
             Don't have an account?{" "}
             <Link
               href="/register"
-              className="font-medium text-bolt-blue hover:underline"
+              className="font-medium text-bolt-blue hover:text-bolt-blue/80"
             >
               Create one here
             </Link>
