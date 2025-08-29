@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Mail, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authService, ForgotPasswordData } from "@/services/authService";
+import { toastService } from "@/services/toastService";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -33,18 +34,24 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateEmail(email)) {
       return;
     }
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const forgotData: ForgotPasswordData = { email };
+      await authService.forgotPassword(forgotData);
+      
       setEmailSent(true);
-    }, 1500);
+      toastService.success('Password reset email sent successfully', 2500);
+    } catch (error: any) {
+      toastService.error(error.message || 'Failed to send reset email', 2500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -113,18 +120,20 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-bolt-cyan hover:underline"
+              <button
+                type="button"
+                onClick={() => router.push('/login')}
+                className="text-sm font-medium text-bolt-cyan hover:underline bg-transparent border-none cursor-pointer"
               >
                 Back to Login
-              </Link>
-              <Link
-                href="/register"
-                className="text-sm font-medium text-bolt-purple hover:underline"
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/register')}
+                className="text-sm font-medium text-bolt-purple hover:underline bg-transparent border-none cursor-pointer"
               >
                 Create Account
-              </Link>
+              </button>
             </div>
           </div>
         ) : (
@@ -140,11 +149,12 @@ export default function ForgotPasswordPage() {
                 Please check your inbox and click the link to continue.
               </p>
             </div>
-            <Link href="/login">
-              <button className="mt-8 w-full h-12 flex items-center justify-center px-4 text-sm font-medium text-bolt-white bg-bolt-blue hover:bg-bolt-mid-blue rounded-lg transition-colors duration-300">
-                Back to Login
-              </button>
-            </Link>
+            <button 
+              onClick={() => router.push('/login')}
+              className="mt-8 w-full h-12 flex items-center justify-center px-4 text-sm font-medium text-bolt-white bg-bolt-blue hover:bg-bolt-mid-blue rounded-lg transition-colors duration-300"
+            >
+              Back to Login
+            </button>
           </div>
         )}
       </div>
