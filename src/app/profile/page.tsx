@@ -51,11 +51,6 @@ export default function ProfilePage() {
     new: false,
     confirm: false,
   });
-  const [passwordErrors, setPasswordErrors] = useState({
-    current: "",
-    new: "",
-    confirm: "",
-  });
   const [passwordUpdateLoading, setPasswordUpdateLoading] = useState(false);
 
   const fetchProfile = () => {
@@ -87,7 +82,6 @@ export default function ProfilePage() {
     setPasswordUpdateLoading(true);
     // Simulate API call
     setTimeout(() => {
-      console.log("Password updated");
       setPasswordUpdateLoading(false);
       setIsChangingPassword(false);
       setPasswordForm({ current: "", new: "", confirm: "" });
@@ -155,12 +149,12 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* User Overview Card */}
       <div className={cn(cardClasses, "flex items-center space-x-4")}>
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-300 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-bolt-blue to-bolt-mid-blue flex items-center justify-center">
           <User className="w-6 h-6 text-white" />
         </div>
         <div>
           <p className="font-semibold text-bolt-black">{userProfile?.email}</p>
-          <span className="inline-block mt-1 text-xs font-medium text-white px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-300">
+          <span className="inline-block mt-1 text-xs font-medium text-white px-2.5 py-1 rounded-full bg-gradient-to-r from-bolt-blue to-bolt-mid-blue">
             ⭐ {userProfile?.accountType}
           </span>
         </div>
@@ -260,9 +254,9 @@ export default function ProfilePage() {
           {premiumFeatures.map((feature) => (
             <div
               key={feature}
-              className="flex items-center space-x-2 border border-gray-300 rounded-lg p-3"
+              className="flex items-center space-x-2 border border-border rounded-lg p-3"
             >
-              <CheckCircle className="w-4 h-4 text-green-600" />
+              <CheckCircle className="w-4 h-4 text-bolt-cyan" />
               <span className="text-sm text-bolt-black">{feature}</span>
             </div>
           ))}
@@ -276,7 +270,6 @@ export default function ProfilePage() {
             Change Your Password
           </h3>
           <form onSubmit={handleUpdatePassword} className="space-y-4">
-            {/* Current Password */}
             <div className="space-y-1">
               <label
                 htmlFor="current"
@@ -291,12 +284,12 @@ export default function ProfilePage() {
                   type={showPasswords.current ? "text" : "password"}
                   value={passwordForm.current}
                   onChange={handlePasswordChange}
-                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
+                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-bolt-black bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
                 />
                 <button
                   type="button"
                   onClick={() => toggleShowPassword("current")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-medium-black hover:text-bolt-black"
                 >
                   {showPasswords.current ? (
                     <EyeOff className="w-5 h-5" />
@@ -306,7 +299,6 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-            {/* New Password */}
             <div className="space-y-1">
               <label
                 htmlFor="new"
@@ -321,12 +313,12 @@ export default function ProfilePage() {
                   type={showPasswords.new ? "text" : "password"}
                   value={passwordForm.new}
                   onChange={handlePasswordChange}
-                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
+                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-bolt-black bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
                 />
                 <button
                   type="button"
                   onClick={() => toggleShowPassword("new")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-medium-black hover:text-bolt-black"
                 >
                   {showPasswords.new ? (
                     <EyeOff className="w-5 h-5" />
@@ -336,7 +328,6 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-            {/* Confirm Password */}
             <div className="space-y-1">
               <label
                 htmlFor="confirm"
@@ -351,12 +342,12 @@ export default function ProfilePage() {
                   type={showPasswords.confirm ? "text" : "password"}
                   value={passwordForm.confirm}
                   onChange={handlePasswordChange}
-                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
+                  className="w-full h-11 pl-4 pr-10 py-2 text-sm text-bolt-black bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bolt-blue/20 focus:border-bolt-blue"
                 />
                 <button
                   type="button"
                   onClick={() => toggleShowPassword("confirm")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-medium-black hover:text-bolt-black"
                 >
                   {showPasswords.confirm ? (
                     <EyeOff className="w-5 h-5" />
@@ -370,14 +361,14 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsChangingPassword(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-bolt-medium-black bg-background hover:bg-border rounded-lg"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={passwordUpdateLoading}
-                className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-bolt-blue hover:bg-bolt-blue/90 rounded-lg disabled:opacity-50"
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-bolt-blue to-bolt-mid-blue hover:opacity-90 rounded-lg disabled:opacity-50"
               >
                 {passwordUpdateLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -402,32 +393,32 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <button
               onClick={() => setIsChangingPassword(!isChangingPassword)}
-              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-slate-100 transition-colors"
+              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-background transition-colors"
             >
               <span className="font-medium text-bolt-black">
                 Change Password
               </span>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <button
               disabled
-              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="font-medium text-bolt-black">
                 Two-Factor Authentication
               </span>
-              <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-border text-muted-foreground px-2 py-0.5 rounded-full">
                 Coming Soon
               </span>
             </button>
             <button
               disabled
-              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-between items-center text-left p-3 rounded-lg hover:bg-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="font-medium text-bolt-black">
                 Download My Data
               </span>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -440,7 +431,7 @@ export default function ProfilePage() {
               Quick Actions
             </h3>
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="space-y-3">
             <button className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-bolt-blue to-bolt-mid-blue hover:opacity-90 rounded-lg transition-opacity">
               <Home className="w-4 h-4 mr-2" />
               Back to Home
@@ -449,7 +440,7 @@ export default function ProfilePage() {
               <FileCog className="w-4 h-4 mr-2" />
               Manage Files
             </button>
-            <button className="sm:col-span-2 w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 border border-red-300 hover:bg-red-50 rounded-lg transition-colors">
+            <button className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-destructive border border-destructive hover:bg-destructive/10 rounded-lg transition-colors">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </button>
