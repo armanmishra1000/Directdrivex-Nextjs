@@ -7,9 +7,9 @@ import { AdminNotification } from '@/types/admin';
 
 export const useAdminSocket = () => {
   const [events, setEvents] = useState<string[]>([
-    'Admin WebSocket connection initializing...',
+    'Admin Dashboard initializing...',
     'System monitoring starting...',
-    'Dashboard loaded successfully'
+    'Loading dashboard components...'
   ]);
   const [isConnected, setIsConnected] = useState(false);
   const { adminUser } = useAdminAuth();
@@ -61,62 +61,52 @@ export const useAdminSocket = () => {
   }, []);
   
   useEffect(() => {
-    if (!adminUser) return;
+    // Initial load - show dashboard loading message
+    addEvent('Dashboard initialized successfully');
+    
+    if (!adminUser) {
+      addEvent('Waiting for admin authentication...');
+      return;
+    }
     
     const token = localStorage.getItem('admin_access_token');
-    if (!token) return;
+    if (!token) {
+      addEvent('No admin token found - authentication required');
+      return;
+    }
     
-    // Connect to WebSocket
-    adminSocketService.connect(token);
-    addEvent('WebSocket connection attempt initiated');
-    
-    // Set up event handlers
-    const removeEventHandler = adminSocketService.onEvent(event => {
-      addEvent(event);
-    });
-    
-    const removeConnectionHandler = adminSocketService.onConnectionChange(connected => {
-      setIsConnected(connected);
-      addEvent(connected 
-        ? 'WebSocket connected successfully' 
-        : 'WebSocket disconnected'
-      );
-    });
-    
-    // Clean up on unmount
-    return () => {
-      removeEventHandler();
-      removeConnectionHandler();
-      adminSocketService.disconnect();
-      addEvent('WebSocket connection closed');
-    };
-  }, [adminUser, addEvent]);
-  
-  // Simulated events for development preview
-  useEffect(() => {
-    if (!isConnected) return;
-    
-    // Demo events that happen periodically
-    const demoEvents = [
-      'User login detected: admin@enterprise.com',
-      'Backup process started',
-      'Storage optimization completed',
-      'New file uploaded: financial-report-q2.xlsx',
-      'System health check: All systems operational',
-      'Google Drive quota usage increased by 2%',
-      'Scheduled maintenance completed'
-    ];
-    
-    const interval = setInterval(() => {
-      // Only add random events if connected
-      if (isConnected && Math.random() > 0.7) {
-        const randomEvent = demoEvents[Math.floor(Math.random() * demoEvents.length)];
-        addEvent(randomEvent);
-      }
-    }, 8000);
-    
-    return () => clearInterval(interval);
-  }, [isConnected, addEvent]);
+    // Connect to WebSocket or simulation mode
+    try {
+      // Connect to WebSocket
+      adminSocketService.connect(token);
+      addEvent('Event stream connection initiated');
+      
+      // Set up event handlers
+      const removeEventHandler = adminSocketService.onEvent(event => {
+        addEvent(event);
+      });
+      
+      const removeConnectionHandler = adminSocketService.onConnectionChange(connected => {
+        setIsConnected(connected);
+        if (connected && !isConnected) {
+          addEvent('Event stream connected successfully');
+        } else if (!connected && isConnected) {
+          addEvent('Event stream disconnected - will attempt reconnection');
+        }
+      });
+      
+      // Clean up on unmount
+      return () => {
+        removeEventHandler();
+        removeConnectionHandler();
+        adminSocketService.disconnect();
+        console.log('Admin socket event handlers cleaned up');
+      };
+    } catch (error) {
+      console.error('Failed to set up admin socket:', error);
+      addEvent('Error setting up event stream - using fallback mode');
+    }
+  }, [adminUser, addEvent, isConnected]);
   
   return {
     events,

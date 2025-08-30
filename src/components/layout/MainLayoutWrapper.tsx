@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/admin');
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/admin-panel');
 
   // If it's an admin route, render only the children (which will be the admin layout)
   if (isAdminRoute) {

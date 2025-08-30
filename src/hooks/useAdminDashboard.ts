@@ -197,11 +197,17 @@ export const useAdminDashboard = () => {
   
   // Auto-load stats on mount and set up refresh interval
   useEffect(() => {
+    // Initial load
     refreshAllStats();
     
-    // Refresh stats every 30 seconds
-    const interval = setInterval(refreshAllStats, 30000);
-    return () => clearInterval(interval);
+    // Refresh stats every 60 seconds instead of 30 to reduce API load
+    const interval = setInterval(refreshAllStats, 60000);
+    
+    // Cleanup on unmount
+    return () => {
+      console.log('Clearing admin dashboard refresh interval');
+      clearInterval(interval);
+    };
   }, [refreshAllStats]);
   
   return {
