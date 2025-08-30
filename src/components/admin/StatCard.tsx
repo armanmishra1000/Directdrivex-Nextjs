@@ -8,11 +8,12 @@ interface StatCardProps {
   title: string;
   value: string;
   icon: LucideIcon;
-  status: 'good' | 'warning' | 'critical';
+  status: 'good' | 'warning' | 'critical' | 'unknown';
   isGdrive?: boolean;
+  additionalInfo?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, status, isGdrive = false }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, status, isGdrive = false, additionalInfo }: StatCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -34,24 +35,30 @@ export function StatCard({ title, value, icon: Icon, status, isGdrive = false }:
     good: "from-emerald-500 to-green-600",
     warning: "from-amber-500 to-orange-600",
     critical: "from-red-500 to-rose-600",
+    unknown: "from-slate-400 to-slate-500",
   };
 
   const gdriveColors = "from-blue-500 to-sky-600";
 
   return (
-    <div className="relative p-6 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-lg shadow-slate-900/5 dark:shadow-black/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="relative p-6 transition-all duration-300 border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10 hover:-translate-y-1 hover:shadow-xl">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{title}</p>
           {loading ? (
-            <div className="h-9 w-24 mt-1 bg-slate-200 dark:bg-slate-700 rounded-md animate-pulse" />
+            <div className="w-24 mt-1 rounded-md h-9 bg-slate-200 dark:bg-slate-700 animate-pulse" />
           ) : error ? (
             <div className="flex items-center gap-2 mt-2 text-red-500 dark:text-red-400">
               <AlertTriangle className="w-5 h-5" />
               <span className="font-semibold">Error</span>
             </div>
           ) : (
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50 mt-1">{value}</p>
+            <>
+              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-50">{value}</p>
+              {additionalInfo && (
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{additionalInfo}</p>
+              )}
+            </>
           )}
         </div>
         <div className={cn(

@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { usePathname } from "next/navigation";
+import { MainLayoutWrapper } from "@/components/layout/MainLayoutWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,9 +32,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main>{children}</main>
-          <Footer />
+          <MainLayoutWrapper>{children}</MainLayoutWrapper>
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
