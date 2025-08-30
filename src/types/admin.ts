@@ -125,3 +125,99 @@ export interface StorageDistributionData {
   googleDrive: number; // in bytes
   hetzner: number; // in bytes
 }
+
+// User Management Types
+
+export type UserStatus = 'active' | 'suspended' | 'banned';
+
+export interface User {
+  _id: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  files_count: number;
+  storage_used: number; // in bytes
+  created_at: string;
+  last_login?: string;
+}
+
+export interface UserListResponse {
+  users: User[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface GetUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  sort_by?: string;
+  sort_direction?: 'asc' | 'desc';
+}
+
+export interface UpdateUserData {
+  role?: UserRole;
+  status?: UserStatus;
+  email?: string;
+}
+
+export interface UserFile {
+  _id: string;
+  filename: string;
+  file_type: 'image' | 'video' | 'audio' | 'document' | 'archive' | 'other';
+  size_bytes: number;
+  size_formatted: string;
+  upload_date: string;
+  upload_date_formatted: string;
+  status: 'completed' | 'uploading' | 'failed' | 'pending';
+  file_id: string; // Unique identifier in storage systems
+}
+
+export interface UserFilesResponse {
+  files: UserFile[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface StorageInsights {
+  status: string;
+  storage_location?: string;
+  google_drive: {
+    exists: boolean;
+    accessible: boolean;
+    details: string;
+    account_id?: string;
+    file_size?: number;
+  };
+  hetzner_storage: {
+    exists: boolean;
+    accessible: boolean;
+    details: string;
+    path?: string;
+    file_size?: number;
+  };
+  recommendations: string[];
+}
+
+export interface ModalState {
+  type: 'view' | 'edit' | 'bulk' | 'files' | 'storage' | 'confirm' | 'reset_password' | null;
+  data: any;
+}
+
+export interface PaginationState {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
+}
