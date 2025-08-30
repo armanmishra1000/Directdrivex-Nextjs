@@ -3,13 +3,15 @@ import Link from "next/link";
 interface SocialIconProps {
   href: string;
   icon: React.ReactNode;
+  onClick?: () => void;
 }
 
-export const SocialIcon = ({ href, icon }: SocialIconProps) => (
+export const SocialIcon = ({ href, icon, onClick }: SocialIconProps) => (
   <Link
     href={href}
     target="_blank"
     rel="noopener noreferrer"
+    onClick={onClick}
     className="w-10 h-10 flex items-center justify-center bg-bolt-blue rounded-full hover:bg-bolt-mid-blue hover:scale-110 transition-all duration-300"
   >
     {icon}

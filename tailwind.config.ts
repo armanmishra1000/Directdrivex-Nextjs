@@ -140,6 +140,11 @@ export default {
           '0%': { backgroundPosition: '0 0' },
           '100%': { backgroundPosition: '100px 100px' },
         },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '25%': { transform: 'translateX(-5px)' },
+          '75%': { transform: 'translateX(5px)' },
+        }
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
@@ -152,6 +157,7 @@ export default {
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'shimmer': 'shimmer 3s ease-in-out infinite',
         'pattern-move': 'patternMove 20s linear infinite',
+        'shake': 'shake 0.5s ease-in-out',
   		}
   	}
   },

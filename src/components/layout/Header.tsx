@@ -6,35 +6,68 @@ import { useRouter, usePathname } from "next/navigation";
 import { CloudUpload, User as UserIcon, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authService, User } from "@/services/authService";
+import { toastService } from "@/services/toastService";
 
 export function Header() {
-  const [isLoggedIn, setIsLoggedIn]
-= useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState("User");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const authenticated = authService.isAuthenticated();
-      setIsLoggedIn(authenticated);
-      if (authenticated) {
-        const user = authService.getCurrentUser();
-        if (user?.email) {
-          const name = user.email.split("@")[0];
-          setDisplayName(
-            name.length > 8 ? `${name.substring(0, 8)}...` : name
-          );
+  // Enhanced display name logic matching Angular
+  const updateUserDisplay = (user: User) => {
+    let fullName = '';
+    
+    // Priority order: name > email username
+    if (user.name) {
+      fullName = user.name;
+    } else if (user.email) {
+      fullName = user.email.split('@')[0];
+    }
+    
+    // Truncate if too long (max 8 characters for UI)
+    const name = fullName.trim();
+    setDisplayName(name.length > 8 ? `${name.substring(0, 8)}...` : name || 'User');
+  };
+  
+  const checkAuthState = async () => {
+    const authenticated = authService.isAuthenticated();
+    setIsLoggedIn(authenticated);
+    
+    if (authenticated) {
+      const user = authService.getCurrentUser();
+      setCurrentUser(user);
+      
+      if (!user) {
+        // If no user data, try to load it
+        try {
+          const userData = await authService.loadUserProfile();
+          setCurrentUser(userData);
+          updateUserDisplay(userData);
+        } catch (error) {
+          // If loading fails, logout
+          authService.logout();
+          setIsLoggedIn(false);
+          setCurrentUser(null);
+          setDisplayName('User');
         }
+      } else {
+        updateUserDisplay(user);
       }
-    };
+    } else {
+      setCurrentUser(null);
+      setDisplayName('User');
+    }
+  };
+  
+  useEffect(() => {
+    checkAuthState();
 
-    checkAuth();
-
-    window.addEventListener("storage", checkAuth);
-    window.addEventListener("focus", checkAuth);
+    window.addEventListener("storage", checkAuthState);
+    window.addEventListener("focus", checkAuthState);
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -43,8 +76,8 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
 
     return () => {
-      window.removeEventListener("storage", checkAuth);
-      window.removeEventListener("focus", checkAuth);
+      window.removeEventListener("storage", checkAuthState);
+      window.removeEventListener("focus", checkAuthState);
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
@@ -57,10 +90,18 @@ export function Header() {
   }, [pathname]);
 
   const handleLogout = () => {
-    authService.logout();
-    setIsLoggedIn(false);
-    setIsMobileMenuOpen(false);
-    router.push("/");
+    try {
+      authService.logout();
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+      setDisplayName('User');
+      setIsMobileMenuOpen(false);
+      
+      toastService.success('Logged out successfully', 2500);
+      router.push('/');
+    } catch (error) {
+      toastService.error('Logout failed. Please try again.', 2500);
+    }
   };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
