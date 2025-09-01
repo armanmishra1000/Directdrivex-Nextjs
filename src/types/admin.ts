@@ -221,3 +221,40 @@ export interface SortConfig {
   key: string;
   direction: 'asc' | 'desc';
 }
+
+// File Management Types
+
+export interface AdminFile {
+  _id: string;
+  filename: string;
+  size_bytes: number;
+  size_formatted: string;
+  content_type: string;
+  file_type: 'image' | 'video' | 'audio' | 'document' | 'archive' | 'other';
+  upload_date: string;
+  owner_email: string;
+  status: 'completed' | 'pending' | 'uploading' | 'failed' | 'deleted';
+  storage_location: 'gdrive' | 'hetzner';
+  download_url: string;
+  preview_available?: boolean;
+}
+
+export interface StorageStats {
+  total_files: number;
+  total_storage: number;
+  total_storage_formatted: string;
+  average_file_size: number;
+  gdrive_files: number;
+  hetzner_files: number;
+}
+
+export interface FileTypeAnalytics {
+  file_types: Array<{
+    _id: string;
+    count: number;
+    total_size: number;
+    percentage: number;
+    size_formatted: string;
+  }>;
+  total_files: number;
+}
