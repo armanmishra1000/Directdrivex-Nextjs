@@ -221,27 +221,3 @@ export interface SortConfig {
   key: string;
   direction: 'asc' | 'desc';
 }
-
-// Activity Logs Types
-export interface ActivityLogParams {
-  page?: number;
-  limit?: number;
-  action?: string;
-  admin_email?: string;
-  date_from?: string;
-  date_to?: string;
-  search?: string;
-}
-
-export interface LogFilters {
-  action: string;
-  admin: string;
-  dateFrom: string;
-  dateTo: string;
-  search: string;
-}
-
-export interface ExportResponse {
-  blob: Blob;
-  filename: string;
-}
