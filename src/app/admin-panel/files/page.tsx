@@ -28,15 +28,7 @@ import {
   FileVideo,
   FileAudio,
   FileArchive,
-  FileQuestion,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RefreshCw,
-  Wifi,
-  WifiOff
+  FileQuestion
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,11 +74,11 @@ const mockFiles: AdminFile[] = Array.from({ length: 48 }, (_, i) => {
 });
 
 const fileTypeAnalyticsData = {
-  document: { count: 12, percentage: 25, color: "bg-blue-500", size: 450000000 },
-  image: { count: 15, percentage: 31.25, color: "bg-emerald-500", size: 380000000 },
-  video: { count: 8, percentage: 16.67, color: "bg-purple-500", size: 2500000000 },
-  audio: { count: 7, percentage: 14.58, color: "bg-amber-500", size: 220000000 },
-  archive: { count: 6, percentage: 12.5, color: "bg-slate-500", size: 1500000000 },
+  document: { count: 12, percentage: 25, color: "bg-blue-500" },
+  image: { count: 15, percentage: 31.25, color: "bg-emerald-500" },
+  video: { count: 8, percentage: 16.67, color: "bg-purple-500" },
+  audio: { count: 7, percentage: 14.58, color: "bg-amber-500" },
+  archive: { count: 6, percentage: 12.5, color: "bg-slate-500" },
 };
 
 // Helper Components
@@ -297,22 +289,10 @@ export default function FileBrowserPage() {
       <div className="overflow-hidden border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
         {/* Analytics */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-900 dark:text-white mb-4">File Type Distribution</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-2">File Type Distribution</h3>
+          <div className="flex w-full h-4 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
             {Object.entries(fileTypeAnalyticsData).map(([key, value]) => (
-              <div key={key} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium capitalize text-slate-800 dark:text-slate-200">{key}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{value.count} files</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-600">
-                  <div className={cn("h-2 rounded-full", value.color)} style={{ width: `${value.percentage}%` }} />
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{formatBytes(value.size)}</span>
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{value.percentage.toFixed(1)}%</span>
-                </div>
-              </div>
+              <div key={key} className={value.color} style={{ width: `${value.percentage}%` }} title={`${key}: ${value.count} files`} />
             ))}
           </div>
         </div>
