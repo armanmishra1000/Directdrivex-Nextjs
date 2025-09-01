@@ -1,152 +1,186 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { Download, RefreshCw, Loader2, AlertTriangle, FileText, Activity, Search, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  Download, 
+  RefreshCw, 
+  Loader2, 
+  AlertTriangle, 
+  FileText, 
+  Activity, 
+  Search, 
+  ChevronLeft, 
+  ChevronRight, 
+  ChevronsLeft, 
+  ChevronsRight,
+  Wifi,
+  WifiOff,
+  Calendar,
+  Filter
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Types
-interface AdminActivityLog {
-  id: string;
-  admin_email: string;
-  action: string;
-  timestamp: string;
-  ip_address?: string;
-  details?: string;
-}
-
-// Mock Data Generation
-const generateMockLogs = (count: number): AdminActivityLog[] => {
-  const actions = ['login', 'login_failed', 'create_admin', 'view_profile', 'view_activity_logs', 'update_user', 'delete_file'];
-  const admins = ['super@admin.com', 'ops@admin.com', 'support@admin.com', 'dev@admin.com'];
-  const details = [
-    'User session initiated successfully.',
-    'Failed login attempt for user: unknown@user.com',
-    'New administrator account created for new@admin.com.',
-    'Viewed user profile for user_id: usr_12345',
-    'Accessed the main activity log dashboard.',
-    'Updated user role for user_id: usr_67890 to admin.',
-    'Permanently deleted file: report_q3.pdf'
-  ];
-
-  return Array.from({ length: count }, (_, i) => {
-    const timestamp = new Date(Date.now() - i * 3600000 * Math.random()).toISOString();
-    const action = actions[i % actions.length];
-    return {
-      id: `log_${i + 1}`,
-      admin_email: admins[i % admins.length],
-      action: action,
-      timestamp: timestamp,
-      ip_address: `192.168.1.${i % 255}`,
-      details: details[i % details.length],
-    };
-  });
-};
-
-const mockLogs = generateMockLogs(150);
+import { useActivityLogs } from "@/hooks/useActivityLogs";
 
 export default function ActivityLogsPage() {
-  const [logs, setLogs] = useState<AdminActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    logs,
+    loading,
+    error,
+    filters,
+    pagination,
+    availableActions,
+    availableAdmins,
+    realTimeEnabled,
+    filteredLogs,
+    loadLogs,
+    exportLogs,
+    refreshLogs,
+    handlePageChange,
+    handlePageSizeChange,
+    updateFilters,
+    clearFilters,
+    formatAction,
+    formatTimestamp,
+    getActionBadgeClass,
+    setRealTimeEnabled
+  } = useActivityLogs();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  
-  const [filters, setFilters] = useState({
-    search: '',
-    action: 'all',
-    admin: 'all',
-    dateFrom: '',
-    dateTo: '',
-  });
+  // Local state for form inputs
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const [actionFilter, setActionFilter] = useState(filters.action);
+  const [adminFilter, setAdminFilter] = useState(filters.admin);
+  const [dateFromFilter, setDateFromFilter] = useState(filters.dateFrom);
+  const [dateToFilter, setDateToFilter] = useState(filters.dateTo);
 
-  const availableActions = useMemo(() => [...new Set(mockLogs.map(log => log.action))].sort(), []);
-  const availableAdmins = useMemo(() => [...new Set(mockLogs.map(log => log.admin_email))].sort(), []);
-
-  const filteredLogs = useMemo(() => {
-    return mockLogs.filter(log => {
-      const searchMatch = !filters.search || log.admin_email.toLowerCase().includes(filters.search.toLowerCase()) || (log.details && log.details.toLowerCase().includes(filters.search.toLowerCase()));
-      const actionMatch = filters.action === 'all' || log.action === filters.action;
-      const adminMatch = filters.admin === 'all' || log.admin_email === filters.admin;
-      let dateMatch = true;
-      if (filters.dateFrom || filters.dateTo) {
-        const logDate = new Date(log.timestamp);
-        if (filters.dateFrom) dateMatch = dateMatch && logDate >= new Date(filters.dateFrom);
-        if (filters.dateTo) {
-          const toDate = new Date(filters.dateTo);
-          toDate.setHours(23, 59, 59, 999);
-          dateMatch = dateMatch && logDate <= toDate;
-        }
-      }
-      return searchMatch && actionMatch && adminMatch && dateMatch;
-    });
-  }, [filters]);
-
-  const paginatedLogs = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredLogs.slice(start, start + pageSize);
-  }, [filteredLogs, currentPage, pageSize]);
-
-  const totalPages = useMemo(() => Math.ceil(filteredLogs.length / pageSize), [filteredLogs, pageSize]);
-
-  const loadLogs = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setLogs(mockLogs);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
+  // Debounce search input
   useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
+    const timeoutId = setTimeout(() => {
+      updateFilters({ search: searchInput });
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchInput, updateFilters]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, pageSize]);
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', action: 'all', admin: 'all', dateFrom: '', dateTo: '' });
-  };
-
-  const getActionBadgeClass = (action: string) => {
-    switch (action.toLowerCase()) {
-      case 'login': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400';
-      case 'login_failed': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      case 'create_admin': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'view_profile': return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
-      case 'view_activity_logs': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
+  // Handle filter changes
+  const handleFilterChange = (filterName: string, value: string) => {
+    switch (filterName) {
+      case 'action':
+        setActionFilter(value);
+        updateFilters({ action: value });
+        break;
+      case 'admin':
+        setAdminFilter(value);
+        updateFilters({ admin: value });
+        break;
+      case 'dateFrom':
+        setDateFromFilter(value);
+        updateFilters({ dateFrom: value });
+        break;
+      case 'dateTo':
+        setDateToFilter(value);
+        updateFilters({ dateTo: value });
+        break;
     }
   };
 
-  const formatAction = (action: string) => action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  const formatTimestamp = (timestamp: string) => new Date(timestamp).toLocaleString();
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setSearchInput('');
+    setActionFilter('all');
+    setAdminFilter('all');
+    setDateFromFilter('');
+    setDateToFilter('');
+    clearFilters();
+  };
+
+  // Handle export with error handling
+  const handleExport = async () => {
+    try {
+      await exportLogs('csv');
+    } catch (err) {
+      // Error is already handled in the hook
+      console.error('Export failed:', err);
+    }
+  };
+
+  // Generate pagination pages for display
+  const generatePaginationPages = () => {
+    const maxPagesToShow = 5;
+    const totalPages = pagination.totalPages;
+    const currentPage = pagination.currentPage;
+    
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  };
+
+  const paginationPages = generatePaginationPages();
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500/10 dark:bg-blue-400/10 text-blue-500 dark:text-blue-400 rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-10 h-10 text-purple-500 rounded-lg bg-purple-500/10 dark:bg-purple-400/10 dark:text-purple-400">
             <Activity className="w-5 h-5" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Activity Logs</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Monitor all administrative actions and system access.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Monitor all administrative actions and system access
+            </p>
           </div>
         </div>
+        
         <div className="flex items-center gap-2">
-          <button className="px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 flex items-center gap-2">
-            <Download className="w-4 h-4" /> Export CSV
+          {/* Real-time indicator */}
+          <div className="flex items-center gap-2">
+            {realTimeEnabled ? (
+              <div 
+                className="cursor-pointer" 
+                title="Real-time updates enabled - click to disable"
+                onClick={() => setRealTimeEnabled(false)}
+              >
+                <Wifi className="w-4 h-4 text-green-500" />
+              </div>
+            ) : (
+              <div 
+                className="cursor-pointer" 
+                title="Real-time updates disabled - click to enable"
+                onClick={() => setRealTimeEnabled(true)}
+              >
+                <WifiOff className="w-4 h-4 text-slate-400" />
+              </div>
+            )}
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {realTimeEnabled ? 'Live' : 'Manual'}
+            </span>
+          </div>
+          
+          <button
+            onClick={handleExport}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-white border rounded-lg text-slate-700 dark:text-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
           </button>
-          <button onClick={loadLogs} disabled={loading} className="px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 flex items-center gap-2">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          
+          <button
+            onClick={refreshLogs}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          >
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
@@ -154,52 +188,192 @@ export default function ActivityLogsPage() {
 
       {/* Main Content Card */}
       <div className="overflow-hidden border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
+        
         {/* Filters */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="relative lg:col-span-2">
-              <Search className="absolute w-5 h-5 -translate-y-1/2 left-3 top-1/2 text-slate-400" />
-              <input type="text" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search by email or details..." className="w-full pl-10 pr-4 bg-white border rounded-lg h-11 dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/50">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* Search */}
+            <div className="relative">
+              <label htmlFor="search" className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-slate-400" />
+                <input
+                  id="search"
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search by email, action, or details..."
+                  className="w-full py-2 pr-4 text-sm bg-white border rounded-lg pl-9 dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
             </div>
-            <select name="action" value={filters.action} onChange={handleFilterChange} className="w-full h-11 px-3 bg-white border rounded-lg dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="all">All Actions</option>
-              {availableActions.map(action => <option key={action} value={action}>{formatAction(action)}</option>)}
-            </select>
-            <select name="admin" value={filters.admin} onChange={handleFilterChange} className="w-full h-11 px-3 bg-white border rounded-lg dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="all">All Admins</option>
-              {availableAdmins.map(admin => <option key={admin} value={admin}>{admin}</option>)}
-            </select>
-            <button onClick={clearFilters} className="w-full px-4 py-2 text-sm font-medium bg-white border rounded-lg h-11 text-slate-700 dark:text-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600">Clear</button>
+
+            {/* Action Filter */}
+            <div>
+              <label htmlFor="action-filter" className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                Action
+              </label>
+              <select
+                id="action-filter"
+                value={actionFilter}
+                onChange={(e) => handleFilterChange('action', e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-white border rounded-lg dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Actions</option>
+                {availableActions.map(action => (
+                  <option key={action} value={action}>
+                    {formatAction(action)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Admin Filter */}
+            <div>
+              <label htmlFor="admin-filter" className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                Admin
+              </label>
+              <select
+                id="admin-filter"
+                value={adminFilter}
+                onChange={(e) => handleFilterChange('admin', e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-white border rounded-lg dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Admins</option>
+                {availableAdmins.map(admin => (
+                  <option key={admin} value={admin}>
+                    {admin}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="date-from" className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  From
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute w-4 h-4 -translate-y-1/2 pointer-events-none left-3 top-1/2 text-slate-400" />
+                  <input
+                    id="date-from"
+                    type="date"
+                    value={dateFromFilter}
+                    onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                    className="w-full py-2 pr-3 text-sm bg-white border rounded-lg pl-9 dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="date-to" className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  To
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute w-4 h-4 -translate-y-1/2 pointer-events-none left-3 top-1/2 text-slate-400" />
+                  <input
+                    id="date-to"
+                    type="date"
+                    value={dateToFilter}
+                    onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                    className="w-full py-2 pr-3 text-sm bg-white border rounded-lg pl-9 dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Actions */}
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+            >
+              <Filter className="w-4 h-4" />
+              Clear Filters
+            </button>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Showing {logs ? logs.length : 0} of {pagination.totalItems} logs
+            </p>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-96"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+            <div className="flex items-center justify-center h-96">
+              <div className="flex flex-col items-center">
+                <Loader2 className="w-8 h-8 mb-4 text-purple-500 animate-spin" />
+                <p className="text-slate-600 dark:text-slate-400">Loading activity logs...</p>
+              </div>
+            </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-96 text-red-500"><AlertTriangle className="w-12 h-12 mb-4" /><p>{error}</p></div>
-          ) : paginatedLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 text-slate-500"><FileText className="w-12 h-12 mb-4" /><p>No logs match your criteria.</p></div>
+            <div className="flex flex-col items-center justify-center h-96">
+              <AlertTriangle className="w-12 h-12 mb-4 text-red-500" />
+              <p className="max-w-md text-center text-red-600 dark:text-red-400">{error}</p>
+              <button
+                onClick={refreshLogs}
+                className="px-4 py-2 mt-4 text-red-600 transition-colors bg-red-100 rounded-lg dark:bg-red-900/20 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : !logs || logs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-96">
+              <FileText className="w-12 h-12 mb-4 text-slate-400" />
+              <h3 className="mb-2 text-lg font-medium text-slate-900 dark:text-white">
+                No activity logs found
+              </h3>
+              <p className="max-w-md text-center text-slate-500 dark:text-slate-400">
+                {Object.values(filters).some(filter => filter && filter !== 'all')
+                  ? "No logs match your current filter criteria. Try adjusting the filters above."
+                  : "There are no activity logs to display at this time."
+                }
+              </p>
+            </div>
           ) : (
-            <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-              <thead className="text-xs uppercase text-slate-700 bg-slate-50 dark:bg-slate-700 dark:text-slate-300">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs font-medium uppercase border-b text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Timestamp</th>
-                  <th scope="col" className="px-6 py-3">Admin</th>
-                  <th scope="col" className="px-6 py-3">Action</th>
-                  <th scope="col" className="px-6 py-3">IP Address</th>
-                  <th scope="col" className="px-6 py-3">Details</th>
+                  <th scope="col" className="px-6 py-4">Timestamp</th>
+                  <th scope="col" className="px-6 py-4">Admin</th>
+                  <th scope="col" className="px-6 py-4">Action</th>
+                  <th scope="col" className="px-6 py-4">IP Address</th>
+                  <th scope="col" className="px-6 py-4">Details</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                {paginatedLogs.map(log => (
-                  <tr key={log.id} className="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-600/20">
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-900 dark:text-slate-200">{formatTimestamp(log.timestamp)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-900 dark:text-slate-200">{log.admin_email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap"><span className={cn("inline-flex px-2 py-1 text-xs font-semibold rounded-full", getActionBadgeClass(log.action))}>{formatAction(log.action)}</span></td>
-                    <td className="px-6 py-4 whitespace-nowrap font-mono">{log.ip_address || 'N/A'}</td>
-                    <td className="px-6 py-4 max-w-xs truncate">{log.details || 'No details'}</td>
+              <tbody className="bg-white divide-y dark:bg-slate-800 divide-slate-200 dark:divide-slate-700">
+                {logs.map((log, index) => (
+                  <tr 
+                    key={log.id || index}
+                    className="transition-all duration-200 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/50 border-l-3 hover:border-l-purple-500"
+                  >
+                    <td className="px-6 py-4 font-mono text-xs whitespace-nowrap text-slate-900 dark:text-slate-100">
+                      {formatTimestamp(log.timestamp)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-slate-900 dark:text-slate-100">
+                      {log.admin_email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={cn(
+                          "inline-flex px-2 py-1 text-xs font-semibold rounded-full",
+                          getActionBadgeClass(log.action)
+                        )}
+                      >
+                        {formatAction(log.action)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs whitespace-nowrap text-slate-600 dark:text-slate-400">
+                      {log.ip_address || 'N/A'}
+                    </td>
+                    <td className="max-w-xs px-6 py-4 text-slate-600 dark:text-slate-400">
+                      <div className="truncate" title={log.details || 'No details'}>
+                        {log.details || 'No details'}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -208,18 +382,72 @@ export default function ActivityLogsPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-col items-center justify-between w-full px-4 py-3 space-y-3 border-t sm:flex-row sm:space-y-0 border-slate-200 dark:border-slate-700">
-          <div className="text-sm text-slate-700 dark:text-slate-400">
-            Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, filteredLogs.length)}</span> of <span className="font-medium">{filteredLogs.length}</span> results
+        {!loading && !error && logs && logs.length > 0 && pagination.totalPages > 1 && (
+          <div className="px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+              <div className="text-sm text-slate-700 dark:text-slate-300">
+                Showing page {pagination.currentPage} of {pagination.totalPages} 
+                <span className="ml-2 text-slate-500 dark:text-slate-400">
+                  ({pagination.totalItems} total logs)
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={pagination.currentPage === 1}
+                  className="p-2 transition-colors rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="First page"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={() => handlePageChange(pagination.currentPage - 1)}
+                  disabled={pagination.currentPage === 1}
+                  className="p-2 transition-colors rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {paginationPages.map(page => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={cn(
+                      "px-3 py-1 text-sm font-medium rounded-md transition-colors",
+                      page === pagination.currentPage
+                        ? "bg-purple-600 text-white"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
+                    )}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => handlePageChange(pagination.currentPage + 1)}
+                  disabled={pagination.currentPage === pagination.totalPages}
+                  className="p-2 transition-colors rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={() => handlePageChange(pagination.totalPages)}
+                  disabled={pagination.currentPage === pagination.totalPages}
+                  className="p-2 transition-colors rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Last page"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="inline-flex items-center space-x-2">
-            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"><ChevronsLeft className="w-4 h-4" /></button>
-            <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
-            <span className="text-sm">Page {currentPage} of {totalPages}</span>
-            <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
-            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"><ChevronsRight className="w-4 h-4" /></button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
