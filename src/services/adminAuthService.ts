@@ -72,10 +72,15 @@ class AdminAuthService {
       // Check if we already have a valid session
       const currentSession = this.adminSessionSubject.value;
       if (currentSession && currentSession.token === token) {
-        return; // Already initialized
+        // Session already exists and is valid
+        this.isAdminAuthenticatedSubject.next(true);
+        return;
       }
       
-      // Try to verify the token immediately
+      // Set authenticated state immediately to prevent redirect loops
+      this.isAdminAuthenticatedSubject.next(true);
+      
+      // Try to verify the token and load profile
       this.verifyAdminToken().then(verification => {
         // Token is valid, create session with verified data
         const session: AdminSession = {
@@ -86,7 +91,6 @@ class AdminAuthService {
         };
         
         this.adminSessionSubject.next(session);
-        this.isAdminAuthenticatedSubject.next(true);
         
         // Load full profile
         this.loadAdminProfile().then(admin => {
@@ -96,12 +100,16 @@ class AdminAuthService {
           this.adminSessionSubject.next(session);
         }).catch(error => {
           console.log('Profile load failed after token verification:', error);
+          // Don't clear session if profile load fails - token is still valid
         });
       }).catch(error => {
         // Token verification failed - clear invalid session
         console.log('Token verification failed - clearing invalid session:', error.message);
         this.clearAdminSession();
       });
+    } else {
+      // No token found - ensure we're not authenticated
+      this.isAdminAuthenticatedSubject.next(false);
     }
   }
 
@@ -353,16 +361,13 @@ class AdminAuthService {
     // Check if token is expired
     const session = this.adminSessionSubject.value;
     if (session && session.expiresAt < new Date()) {
+      console.log('Session expired - clearing admin session');
       this.clearAdminSession();
       return false;
     }
 
-    // If we have a token but no session, return true to allow initialization
-    // The session will be created during the async verification process
-    if (token && !session) {
-      return true;
-    }
-
+    // If we have a valid token, return the current authentication state
+    // This allows the async verification process to complete
     return this.isAdminAuthenticatedSubject.value;
   }
 

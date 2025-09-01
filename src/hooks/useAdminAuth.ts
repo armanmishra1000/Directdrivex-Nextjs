@@ -35,7 +35,10 @@ export function useAdminAuth() {
           // Try to load profile if we don't have it
           adminAuthService.loadAdminProfile()
             .then(data => setAdminUser(data))
-            .catch(err => console.error('Error loading admin profile:', err));
+            .catch(err => {
+              console.error('Error loading admin profile:', err);
+              // Don't clear authentication if profile load fails
+            });
         }
         
         // Get current session
@@ -58,6 +61,19 @@ export function useAdminAuth() {
     const authSubscription = adminAuthService.isAdminAuthenticated$.subscribe(
       authState => {
         setIsAuthenticated(authState);
+        if (authState) {
+          // When authenticated, try to load admin data if not already loaded
+          const adminData = adminAuthService.getCurrentAdmin();
+          if (!adminData) {
+            adminAuthService.loadAdminProfile()
+              .then(data => setAdminUser(data))
+              .catch(err => console.error('Error loading admin profile:', err));
+          }
+        } else {
+          // When not authenticated, clear admin data
+          setAdminUser(null);
+          setAdminSession(null);
+        }
         setLoading(false);
       }
     );
