@@ -20,6 +20,7 @@ import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAdminSocket } from "@/hooks/useAdminSocket";
 import { adminStatsService } from "@/services/adminStatsService";
 import { SystemHealth } from "@/types/admin";
+import { RecentMediaCard } from "@/components/admin/RecentMediaCard";
 
 export default function AdminDashboardPage() {
   const {
@@ -206,42 +207,16 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Live Event Stream with Real Data */}
-      <div className="p-6 border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-50">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            Live Event Stream 
-            <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
-              ({events.length} events)
-            </span>
-          </h3>
-          <div className="flex gap-2">
-            <button 
-              onClick={handleRefresh}
-              className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-            <button 
-              onClick={clearEvents}
-              className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="pr-2 space-y-2 overflow-y-auto max-h-80">
-          {events.map((event, index) => (
-            <div key={`${event}-${index}`} className="flex items-start gap-3 p-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/30">
-              <span className="font-mono text-xs text-slate-500 dark:text-slate-400 mt-0.5 whitespace-nowrap">
-                {new Date(Date.now() - index * 60000).toLocaleTimeString()}
-              </span>
-              <p className="text-slate-700 dark:text-slate-200">{event}</p>
-            </div>
-          ))}
-        </div>
+      {/* Live Data Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <LiveEventStream 
+          events={events}
+          isConnected={isConnected}
+          onClear={clearEvents}
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+        />
+        <RecentMediaCard />
       </div>
     </div>
   );
