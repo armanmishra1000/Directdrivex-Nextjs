@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { mockPasswordPolicy } from "./data";
 import { PasswordPolicy } from "@/types/security";
-import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 
 const GlassCard = ({ title, children }: { title: string, children: React.ReactNode }) => (
   <div className="p-6 border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
@@ -22,38 +19,40 @@ export function PasswordPolicyTab() {
       <div className="space-y-6">
         <div>
           <label className="block mb-2 text-sm font-medium">Minimum Length: {policy.min_length} characters</label>
-          <Slider
-            value={[policy.min_length]}
-            onValueChange={(value) => setPolicy({ ...policy, min_length: value[0] })}
+          <input
+            type="range"
+            value={policy.min_length}
+            onChange={(e) => setPolicy({ ...policy, min_length: +e.target.value })}
             min={8} max={32} step={1}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:rounded-full"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
-            <Checkbox id="require_uppercase" checked={policy.require_uppercase} onCheckedChange={(checked) => setPolicy({ ...policy, require_uppercase: !!checked })} />
+            <input id="require_uppercase" type="checkbox" checked={policy.require_uppercase} onChange={(e) => setPolicy({ ...policy, require_uppercase: e.target.checked })} className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" />
             <label htmlFor="require_uppercase">Require Uppercase</label>
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="require_lowercase" checked={policy.require_lowercase} onCheckedChange={(checked) => setPolicy({ ...policy, require_lowercase: !!checked })} />
+            <input id="require_lowercase" type="checkbox" checked={policy.require_lowercase} onChange={(e) => setPolicy({ ...policy, require_lowercase: e.target.checked })} className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" />
             <label htmlFor="require_lowercase">Require Lowercase</label>
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="require_numbers" checked={policy.require_numbers} onCheckedChange={(checked) => setPolicy({ ...policy, require_numbers: !!checked })} />
+            <input id="require_numbers" type="checkbox" checked={policy.require_numbers} onChange={(e) => setPolicy({ ...policy, require_numbers: e.target.checked })} className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" />
             <label htmlFor="require_numbers">Require Numbers</label>
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="require_special_chars" checked={policy.require_special_chars} onCheckedChange={(checked) => setPolicy({ ...policy, require_special_chars: !!checked })} />
+            <input id="require_special_chars" type="checkbox" checked={policy.require_special_chars} onChange={(e) => setPolicy({ ...policy, require_special_chars: e.target.checked })} className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" />
             <label htmlFor="require_special_chars">Require Special Characters</label>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block mb-1 text-sm font-medium">Password History</label>
-            <Input type="number" value={policy.password_history_count} onChange={(e) => setPolicy({ ...policy, password_history_count: +e.target.value })} />
+            <input type="number" value={policy.password_history_count} onChange={(e) => setPolicy({ ...policy, password_history_count: +e.target.value })} className="w-full px-3 py-2 bg-white border rounded-md dark:bg-slate-900 border-slate-300 dark:border-slate-600" />
           </div>
           <div>
             <label className="block mb-1 text-sm font-medium">Password Expiry (days)</label>
-            <Input type="number" value={policy.password_expiry_days} onChange={(e) => setPolicy({ ...policy, password_expiry_days: +e.target.value })} />
+            <input type="number" value={policy.password_expiry_days} onChange={(e) => setPolicy({ ...policy, password_expiry_days: +e.target.value })} className="w-full px-3 py-2 bg-white border rounded-md dark:bg-slate-900 border-slate-300 dark:border-slate-600" />
           </div>
         </div>
       </div>

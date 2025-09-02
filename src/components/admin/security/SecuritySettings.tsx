@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Cog, Shield, Key, Users, Save, RotateCcw } from "lucide-react";
 import { GeneralSecurityTab } from "./GeneralSecurityTab";
 import { AccessRulesTab } from "./AccessRulesTab";
 import { PasswordPolicyTab } from "./PasswordPolicyTab";
 import { ActiveSessionsTab } from "./ActiveSessionsTab";
+import { cn } from "@/lib/utils";
+
+const tabs = [
+  { id: "general", label: "General", icon: Cog },
+  { id: "access-rules", label: "Access Rules", icon: Shield },
+  { id: "password-policy", label: "Password Policy", icon: Key },
+  { id: "sessions", label: "Active Sessions", icon: Users },
+];
 
 export function SecuritySettings() {
   const [activeTab, setActiveTab] = useState("general");
@@ -34,27 +41,32 @@ export function SecuritySettings() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="general"><Cog className="w-4 h-4 mr-2" />General</TabsTrigger>
-          <TabsTrigger value="access-rules"><Shield className="w-4 h-4 mr-2" />Access Rules</TabsTrigger>
-          <TabsTrigger value="password-policy"><Key className="w-4 h-4 mr-2" />Password Policy</TabsTrigger>
-          <TabsTrigger value="sessions"><Users className="w-4 h-4 mr-2" />Active Sessions</TabsTrigger>
-        </TabsList>
-        <TabsContent value="general" className="mt-6">
-          <GeneralSecurityTab />
-        </TabsContent>
-        <TabsContent value="access-rules" className="mt-6">
-          <AccessRulesTab />
-        </TabsContent>
-        <TabsContent value="password-policy" className="mt-6">
-          <PasswordPolicyTab />
-        </TabsContent>
-        <TabsContent value="sessions" className="mt-6">
-          <ActiveSessionsTab />
-        </TabsContent>
-      </Tabs>
+      {/* Custom Tabs */}
+      <div>
+        <div className="grid w-full grid-cols-2 p-1 rounded-lg md:grid-cols-4 bg-slate-100 dark:bg-slate-800">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition-colors rounded-md",
+                activeTab === tab.id
+                  ? "bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+              )}
+            >
+              <tab.icon className="w-4 h-4 mr-2" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-6">
+          {activeTab === 'general' && <GeneralSecurityTab />}
+          {activeTab === 'access-rules' && <AccessRulesTab />}
+          {activeTab === 'password-policy' && <PasswordPolicyTab />}
+          {activeTab === 'sessions' && <ActiveSessionsTab />}
+        </div>
+      </div>
     </div>
   );
 }
