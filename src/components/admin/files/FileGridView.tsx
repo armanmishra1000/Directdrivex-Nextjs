@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { FileItem } from "@/types/file-browser";
 import { cn } from "@/lib/utils";
 import { FileImage, FileVideo, FileText, FileArchive, FileAudio, FileQuestion, MoreVertical, Download, Edit, Trash2, Shield } from "lucide-react";
@@ -27,9 +28,24 @@ interface FileGridViewProps {
   files: FileItem[];
   selectedFileIds: Set<string>;
   setSelectedFileIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  onFileOperation?: (operation: string, file: FileItem, params?: any) => void;
 }
 
-export function FileGridView({ files, selectedFileIds, setSelectedFileIds }: FileGridViewProps) {
+export function FileGridView({ files, selectedFileIds, setSelectedFileIds, onFileOperation }: FileGridViewProps) {
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveDropdown(null);
+    };
+
+    if (activeDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [activeDropdown]);
+
   const handleSelectOne = (id: string) => {
     const newSelection = new Set(selectedFileIds);
     if (newSelection.has(id)) {
@@ -40,37 +56,85 @@ export function FileGridView({ files, selectedFileIds, setSelectedFileIds }: Fil
     setSelectedFileIds(newSelection);
   };
 
+  const handleFileOperation = (operation: string, file: FileItem) => {
+    console.log('FileGridView: File operation triggered:', { operation, fileId: file._id, fileName: file.filename });
+    onFileOperation?.(operation, file);
+    setActiveDropdown(null);
+  };
+
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {files.map(file => {
-        const { icon: Icon, color, bgColor } = fileTypeConfig[file.type];
-        const isSelected = selectedFileIds.has(file.id);
+        const { icon: Icon, color, bgColor } = fileTypeConfig[file.file_type];
+        const isSelected = selectedFileIds.has(file._id);
         return (
-          <div key={file.id} className={cn("relative group border rounded-xl transition-all duration-200", isSelected ? "border-blue-500 ring-2 ring-blue-500" : "border-slate-200 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1")}>
-            <div className="absolute top-2 left-2 z-10">
-              <input type="checkbox" checked={isSelected} onChange={() => handleSelectOne(file.id)} className="w-4 h-4 text-blue-600 rounded" />
+          <div key={file._id} className={cn("relative group border rounded-xl transition-all duration-200", isSelected ? "border-blue-500 ring-2 ring-blue-500" : "border-slate-200 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1")}>
+            <div className="absolute z-10 top-2 left-2">
+              <input type="checkbox" checked={isSelected} onChange={() => handleSelectOne(file._id)} className="w-4 h-4 text-blue-600 rounded" />
             </div>
-            <div className="absolute top-2 right-2 z-10">
+            <div className="absolute z-10 top-2 right-2">
               <div className="relative">
-                <button className="p-1.5 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveDropdown(activeDropdown === file._id ? null : file._id);
+                  }}
+                  className="p-1.5 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <MoreVertical className="w-4 h-4" />
                 </button>
-                <div className="absolute right-0 z-20 hidden p-1 mt-1 bg-white border rounded-md shadow-lg dark:bg-slate-900 border-slate-200 dark:border-slate-700 group-hover:block">
-                  <button className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"><Download className="w-4 h-4" /> Download</button>
-                  <button className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"><Edit className="w-4 h-4" /> Details</button>
-                  <button className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"><Shield className="w-4 h-4" /> Quarantine</button>
-                  <button className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-4 h-4" /> Delete</button>
-                </div>
+                {activeDropdown === file._id && (
+                  <div className="absolute right-0 z-20 w-48 mt-1 bg-white border rounded-md shadow-lg dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                    <div className="py-1">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('download', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <Download className="w-4 h-4" /> Download
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('preview', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <Edit className="w-4 h-4" /> Preview
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('quarantine', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                      >
+                        <Shield className="w-4 h-4" /> Quarantine
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('delete', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className={cn("flex items-center justify-center h-32 rounded-t-xl", bgColor)}>
               <Icon className={cn("w-12 h-12", color)} />
             </div>
             <div className="p-3 bg-white dark:bg-slate-800 rounded-b-xl">
-              <p className="text-sm font-medium truncate text-slate-900 dark:text-white" title={file.name}>{file.name}</p>
+              <p className="text-sm font-medium truncate text-slate-900 dark:text-white" title={file.filename}>{file.filename}</p>
               <div className="flex items-center justify-between mt-1 text-xs text-slate-500 dark:text-slate-400">
-                <span>{formatBytes(file.size)}</span>
-                {file.storage === 'gdrive' ? <FaGoogleDrive className="w-4 h-4 text-green-500" /> : <FaServer className="w-4 h-4 text-blue-500" />}
+                <span>{file.size_formatted}</span>
+                {file.storage_location === 'gdrive' ? <FaGoogleDrive className="w-4 h-4 text-green-500" /> : <FaServer className="w-4 h-4 text-blue-500" />}
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileTypeAnalyticsData, FileType } from "@/types/file-browser";
+import { FileTypeAnalytics as FileTypeAnalyticsType, FileType } from "@/types/file-browser";
 import { cn } from "@/lib/utils";
 import { FileImage, FileVideo, FileText, FileArchive, FileAudio, FileQuestion } from "lucide-react";
 
@@ -19,25 +19,25 @@ const fileTypeConfig: Record<FileType, { icon: React.ElementType; color: string 
   other: { icon: FileQuestion, color: "bg-slate-500" },
 };
 
-export function FileTypeAnalytics({ data }: { data: FileTypeAnalyticsData[] }) {
-  const totalFiles = data.reduce((sum, item) => sum + item.fileCount, 0);
+export function FileTypeAnalytics({ data }: { data: FileTypeAnalyticsType['file_types'] }) {
+  const totalFiles = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <div className="p-6 border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
       <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-50">File Type Analytics</h3>
       <div className="space-y-4">
         {data.map(item => {
-          const percentage = totalFiles > 0 ? (item.fileCount / totalFiles) * 100 : 0;
-          const { icon: Icon, color } = fileTypeConfig[item.type];
+          const percentage = totalFiles > 0 ? (item.count / totalFiles) * 100 : 0;
+          const { icon: Icon, color } = fileTypeConfig[item._id as FileType];
           return (
-            <div key={item.type}>
+            <div key={item._id}>
               <div className="flex items-center justify-between mb-1 text-sm">
                 <div className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-200">
                   <Icon className="w-4 h-4" />
-                  <span>{item.type.charAt(0).toUpperCase() + item.type.slice(1)}</span>
+                  <span>{item._id.charAt(0).toUpperCase() + item._id.slice(1)}</span>
                 </div>
                 <div className="text-slate-500 dark:text-slate-400">
-                  {item.fileCount.toLocaleString()} files ({percentage.toFixed(0)}%) - {formatBytes(item.totalSize)}
+                  {item.count.toLocaleString()} files ({percentage.toFixed(0)}%) - {item.size_formatted}
                 </div>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700">
