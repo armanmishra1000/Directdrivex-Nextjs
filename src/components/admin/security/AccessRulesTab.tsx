@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { mockAccessRules } from "./data";
-import { AccessRule } from "@/types/security";
+import { AccessRule, UseAccessRulesReturn } from "@/types/security";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { RuleEditModal } from "./RuleEditModal";
 import { cn } from "@/lib/utils";
 
-export function AccessRulesTab() {
-  const [rules, setRules] = useState<AccessRule[]>(mockAccessRules);
+interface AccessRulesTabProps {
+  accessRules: UseAccessRulesReturn;
+}
+
+export function AccessRulesTab({ accessRules }: AccessRulesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AccessRule | null>(null);
+
+  const { rules, loading, error } = accessRules;
 
   const handleAddRule = () => {
     setEditingRule(null);
@@ -22,13 +26,17 @@ export function AccessRulesTab() {
     setIsModalOpen(true);
   };
 
-  const handleSaveRule = (rule: AccessRule) => {
-    if (editingRule) {
-      setRules(rules.map(r => r.id === rule.id ? rule : r));
-    } else {
-      setRules([...rules, { ...rule, id: `rule_${rules.length + 1}` }]);
+  const handleSaveRule = async (rule: AccessRule) => {
+    try {
+      if (editingRule) {
+        await accessRules.updateAccessRule(editingRule.rule_name, rule);
+      } else {
+        await accessRules.createAccessRule(rule);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving access rule:', error);
     }
-    setIsModalOpen(false);
   };
 
   const getActionBadgeClass = (action: AccessRule['action']) => {
@@ -59,7 +67,7 @@ export function AccessRulesTab() {
           </thead>
           <tbody className="bg-white divide-y dark:bg-slate-800 divide-slate-200 dark:divide-slate-700">
             {rules.map(rule => (
-              <tr key={rule.id}>
+              <tr key={rule.rule_name}>
                 <td className="px-6 py-4">
                   <div className={`w-2.5 h-2.5 rounded-full ${rule.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                 </td>

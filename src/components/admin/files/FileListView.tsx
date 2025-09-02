@@ -307,7 +307,7 @@ export function FileListView({
                               </div>
                             </div>
                           )}
-                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>

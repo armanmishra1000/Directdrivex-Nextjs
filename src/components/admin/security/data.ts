@@ -12,7 +12,6 @@ export const mockSecurityConfig: SecurityConfig = {
 
 export const mockAccessRules: AccessRule[] = [
   {
-    id: 'rule_1',
     rule_name: 'Allow Office Network',
     ip_pattern: '192.168.1.0/24',
     action: 'allow',
@@ -23,7 +22,6 @@ export const mockAccessRules: AccessRule[] = [
     last_modified: new Date().toISOString(),
   },
   {
-    id: 'rule_2',
     rule_name: 'Deny Malicious Actor',
     ip_pattern: '103.22.14.5',
     action: 'deny',
@@ -34,7 +32,6 @@ export const mockAccessRules: AccessRule[] = [
     last_modified: new Date().toISOString(),
   },
   {
-    id: 'rule_3',
     rule_name: 'Rate Limit Staging API',
     ip_pattern: '10.0.0.0/8',
     action: 'rate_limit',

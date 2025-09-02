@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Cog, Shield, Key, Users, Save, RotateCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Cog, Shield, Key, Users, Save, RotateCcw, AlertTriangle } from "lucide-react";
 import { GeneralSecurityTab } from "./GeneralSecurityTab";
 import { AccessRulesTab } from "./AccessRulesTab";
 import { PasswordPolicyTab } from "./PasswordPolicyTab";
 import { ActiveSessionsTab } from "./ActiveSessionsTab";
+import { useSecuritySettings } from "@/hooks/useSecuritySettings";
+import { useAccessRules } from "@/hooks/useAccessRules";
+import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
+import { useActiveSessions } from "@/hooks/useActiveSessions";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -17,6 +21,57 @@ const tabs = [
 
 export function SecuritySettings() {
   const [activeTab, setActiveTab] = useState("general");
+  const [globalError, setGlobalError] = useState("");
+
+  // Initialize all security hooks
+  const securitySettings = useSecuritySettings();
+  const accessRules = useAccessRules();
+  const passwordPolicy = usePasswordPolicy();
+  const activeSessions = useActiveSessions();
+
+  // Load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        await Promise.all([
+          securitySettings.loadSecurityConfig(),
+          accessRules.loadAccessRules(),
+          passwordPolicy.loadPasswordPolicy(),
+          activeSessions.loadActiveSessions()
+        ]);
+      } catch (error) {
+        console.error('Error loading initial security data:', error);
+        setGlobalError('Failed to load security configuration');
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  // Handle save all settings
+  const handleSaveAll = async () => {
+    try {
+      setGlobalError("");
+      await Promise.all([
+        securitySettings.saveSecurityConfig(),
+        passwordPolicy.savePasswordPolicy()
+      ]);
+    } catch (error) {
+      console.error('Error saving security settings:', error);
+      setGlobalError('Failed to save some security settings');
+    }
+  };
+
+  // Handle reset all changes
+  const handleResetAll = () => {
+    securitySettings.resetSecurityConfig();
+    passwordPolicy.resetPasswordPolicy();
+    setGlobalError("");
+  };
+
+  // Check if there are any unsaved changes
+  const hasUnsavedChanges = securitySettings.hasChanges || passwordPolicy.hasChanges;
+  const isLoading = securitySettings.loading || accessRules.loading || passwordPolicy.loading || activeSessions.loading;
 
   return (
     <div className="space-y-6">
@@ -32,14 +87,36 @@ export function SecuritySettings() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-white border rounded-lg text-slate-700 dark:text-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600">
+          <button 
+            onClick={handleResetAll}
+            disabled={!hasUnsavedChanges || isLoading}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-white border rounded-lg text-slate-700 dark:text-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <RotateCcw className="w-4 h-4" /> Reset Changes
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+          <button 
+            onClick={handleSaveAll}
+            disabled={!hasUnsavedChanges || isLoading}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Save className="w-4 h-4" /> Save All Settings
           </button>
         </div>
       </div>
+
+      {/* Global Error Display */}
+      {globalError && (
+        <div className="flex items-center gap-3 p-4 text-red-800 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-200 dark:border-red-800">
+          <AlertTriangle className="w-5 h-5" />
+          <span className="text-sm font-medium">{globalError}</span>
+          <button 
+            onClick={() => setGlobalError("")}
+            className="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Custom Tabs */}
       <div>
@@ -61,10 +138,26 @@ export function SecuritySettings() {
           ))}
         </div>
         <div className="mt-6">
-          {activeTab === 'general' && <GeneralSecurityTab />}
-          {activeTab === 'access-rules' && <AccessRulesTab />}
-          {activeTab === 'password-policy' && <PasswordPolicyTab />}
-          {activeTab === 'sessions' && <ActiveSessionsTab />}
+          {activeTab === 'general' && (
+            <GeneralSecurityTab 
+              securitySettings={securitySettings}
+            />
+          )}
+          {activeTab === 'access-rules' && (
+            <AccessRulesTab 
+              accessRules={accessRules}
+            />
+          )}
+          {activeTab === 'password-policy' && (
+            <PasswordPolicyTab 
+              passwordPolicy={passwordPolicy}
+            />
+          )}
+          {activeTab === 'sessions' && (
+            <ActiveSessionsTab 
+              activeSessions={activeSessions}
+            />
+          )}
         </div>
       </div>
     </div>
