@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { FileItem } from "@/types/file-browser";
 import { cn } from "@/lib/utils";
-import { FileImage, FileVideo, FileText, FileArchive, FileAudio, FileQuestion, MoreVertical, Download, Edit, Trash2, Shield } from "lucide-react";
+import { FileImage, FileVideo, FileText, FileArchive, FileAudio, FileQuestion, MoreVertical, Download, Edit, Trash2, Shield, CheckCircle, ArrowRight, CloudUpload, RotateCcw, Eye } from "lucide-react";
 import { FaGoogleDrive } from "react-icons/fa";
 import { FaServer } from "react-icons/fa6";
 
@@ -84,8 +84,9 @@ export function FileGridView({ files, selectedFileIds, setSelectedFileIds, onFil
                   <MoreVertical className="w-4 h-4" />
                 </button>
                 {activeDropdown === file._id && (
-                  <div className="absolute right-0 z-20 w-48 mt-1 bg-white border rounded-md shadow-lg dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                  <div className="absolute right-0 z-20 w-56 mt-1 bg-white border rounded-md shadow-lg dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                     <div className="py-1">
+                      {/* Primary Actions */}
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -95,15 +96,63 @@ export function FileGridView({ files, selectedFileIds, setSelectedFileIds, onFil
                       >
                         <Download className="w-4 h-4" /> Download
                       </button>
+                      {file.preview_available && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFileOperation('preview', file);
+                          }}
+                          className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <Eye className="w-4 h-4" /> Preview
+                        </button>
+                      )}
+                      
+                      {/* Separator */}
+                      <hr className="my-1 border-slate-200 dark:border-slate-700" />
+                      
+                      {/* File Operations */}
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleFileOperation('preview', file);
+                          handleFileOperation('integrity_check', file);
                         }}
                         className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
                       >
-                        <Edit className="w-4 h-4" /> Preview
+                        <CheckCircle className="w-4 h-4" /> Check Integrity
                       </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('move', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <ArrowRight className="w-4 h-4" /> Move File
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('force_backup', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <CloudUpload className="w-4 h-4" /> Force Backup
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileOperation('recover', file);
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <RotateCcw className="w-4 h-4" /> Recover File
+                      </button>
+                      
+                      {/* Separator */}
+                      <hr className="my-1 border-slate-200 dark:border-slate-700" />
+                      
+                      {/* Admin Actions */}
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();

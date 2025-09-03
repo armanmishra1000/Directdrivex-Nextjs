@@ -323,58 +323,7 @@ class AdminSocketService {
     }
   }
 
-  /**
-   * Subscribe to specific file browser events
-   */
-  onFileBrowserEvent(eventType: string, handler: (data: any) => void): () => void {
-    const wrappedHandler = (event: string) => {
-      try {
-        const data = JSON.parse(event);
-        if (data.type === eventType) {
-          handler(data.payload);
-        }
-      } catch {
-        // Not a JSON event, ignore
-      }
-    };
 
-    return this.onEvent(wrappedHandler);
-  }
-
-  /**
-   * Subscribe to file integrity check events
-   */
-  onFileIntegrityCheck(handler: (data: any) => void): () => void {
-    return this.onFileBrowserEvent('file_integrity_check_complete', handler);
-  }
-
-  /**
-   * Subscribe to file backup events
-   */
-  onFileBackup(handler: (data: any) => void): () => void {
-    return this.onFileBrowserEvent('file_backup_complete', handler);
-  }
-
-  /**
-   * Subscribe to file recovery events
-   */
-  onFileRecovery(handler: (data: any) => void): () => void {
-    return this.onFileBrowserEvent('file_recovery_complete', handler);
-  }
-
-  /**
-   * Subscribe to storage stats updates
-   */
-  onStorageStatsUpdate(handler: (data: any) => void): () => void {
-    return this.onFileBrowserEvent('storage_stats_updated', handler);
-  }
-
-  /**
-   * Subscribe to orphaned files cleanup events
-   */
-  onOrphanedFilesCleanup(handler: (data: any) => void): () => void {
-    return this.onFileBrowserEvent('orphaned_files_cleanup_complete', handler);
-  }
 
   /**
    * Subscribe to backup management events
@@ -434,6 +383,59 @@ class AdminSocketService {
    */
   onBackupCleanupComplete(handler: (data: any) => void): () => void {
     return this.onBackupEvent('backup_cleanup_complete', handler);
+  }
+
+  /**
+   * Subscribe to file browser specific events
+   */
+  onFileBrowserEvent(eventType: string, handler: (data: any) => void): () => void {
+    const wrappedHandler = (event: string) => {
+      try {
+        const data = JSON.parse(event);
+        if (data.type === eventType) {
+          handler(data.payload);
+        }
+      } catch {
+        // Not a JSON event, ignore
+      }
+    };
+
+    return this.onEvent(wrappedHandler);
+  }
+
+  /**
+   * Subscribe to file integrity check events
+   */
+  onFileIntegrityCheck(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('file_integrity_check_complete', handler);
+  }
+
+  /**
+   * Subscribe to file backup events
+   */
+  onFileBackup(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('file_backup_complete', handler);
+  }
+
+  /**
+   * Subscribe to file recovery events
+   */
+  onFileRecovery(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('file_recovery_complete', handler);
+  }
+
+  /**
+   * Subscribe to storage stats updates
+   */
+  onStorageStatsUpdate(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('storage_stats_updated', handler);
+  }
+
+  /**
+   * Subscribe to orphaned files cleanup events
+   */
+  onOrphanedFilesCleanup(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('orphaned_files_cleanup_complete', handler);
   }
 }
 

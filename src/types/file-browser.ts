@@ -130,13 +130,15 @@ export interface PreviewData {
   available: boolean;
 }
 
-// Enhanced filter state
+// Enhanced filter state with Angular parity
 export interface FilterState {
   search: string;
   type: FileType | 'all';
   owner: string;
   storage: StorageLocation | 'all';
   status: FileStatus | 'all';
+  sizeMin: number;
+  sizeMax: number;
 }
 
 // Enhanced sort config

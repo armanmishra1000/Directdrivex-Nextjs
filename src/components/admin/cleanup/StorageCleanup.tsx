@@ -1,6 +1,9 @@
 "use client";
+
+import { useState } from "react";
 import { Trash2, Info, HardDrive, Database, Layers } from "lucide-react";
-import { useStorageCleanup } from "@/hooks/useStorageCleanup";
+import { CleanupResult } from "@/types/cleanup";
+import { mockCleanupResult } from "./data";
 import { cn } from "@/lib/utils";
 
 // Custom Toggle Switch Component
@@ -26,14 +29,44 @@ const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: (chec
 );
 
 export function StorageCleanup() {
-  const {
-    loading,
-    result,
-    logs,
-    useHardDelete,
-    setUseHardDelete,
-    runCleanup
-  } = useStorageCleanup();
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<CleanupResult | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [useHardDelete, setUseHardDelete] = useState(false);
+
+  const appendLog = (line: string) => {
+    const stamp = new Date().toLocaleString();
+    setLogs(prev => [`[${stamp}] ${line}`, ...prev]);
+  };
+
+  const runCleanup = () => {
+    if (!confirm(`Are you sure you want to run a ${useHardDelete ? 'HARD' : 'SOFT'} reset? This cannot be undone.`)) return;
+    
+    setLoading(true);
+    setResult(null);
+    setLogs([]);
+    appendLog(`Starting ${useHardDelete ? 'HARD' : 'SOFT'} storage reset...`);
+
+    // Simulate API call
+    setTimeout(() => {
+      const res: CleanupResult = { 
+        ...mockCleanupResult, 
+        mode: useHardDelete ? 'hard' as const : 'soft' as const 
+      };
+      if (useHardDelete) {
+        res.files_hard_deleted = res.files_marked_deleted;
+        res.files_marked_deleted = 0;
+      }
+      setResult(res);
+      appendLog(`Reset completed: ${res.message}`);
+      appendLog(`GDrive deleted=${res.gdrive.summary.deleted}, errors=${res.gdrive.summary.errors}`);
+      Object.entries(res.gdrive.per_account || {}).forEach(([account, info]) => {
+        appendLog(`Account ${account}: deleted=${info.deleted}, errors=${info.errors}${info.message ? `, note=${info.message}` : ''}`);
+      });
+      appendLog(`DB files marked deleted=${res.files_marked_deleted}, hard deleted=${res.files_hard_deleted}, batches deleted=${res.batches_deleted}`);
+      setLoading(false);
+    }, 2500);
+  };
 
   return (
     <div className="space-y-6">

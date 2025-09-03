@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { UploadService } from '@/services/uploadService';
 import { BatchUploadService } from '@/services/batchUploadService';
 import { AuthService } from '@/services/authService';
-import { storageCleanupService } from '@/services/admin/storageCleanupService';
 
 const uploadService = new UploadService();
 const batchUploadService = new BatchUploadService();
@@ -81,22 +80,6 @@ export default function TestServicesPage() {
     }
   };
 
-  const testStorageCleanup = async () => {
-    try {
-      addResult(`🔄 Testing storage cleanup service (demo mode)...`);
-      const result = await storageCleanupService.runStorageCleanupDemo(false);
-      addResult(`✅ Storage cleanup demo completed: ${result.mode} mode`);
-      addResult(`📊 GDrive files deleted: ${result.gdrive.summary.deleted}`);
-      addResult(`❌ GDrive errors: ${result.gdrive.summary.errors}`);
-      addResult(`🗃️ DB files marked deleted: ${result.files_marked_deleted}`);
-      addResult(`🗑️ DB files hard deleted: ${result.files_hard_deleted}`);
-      addResult(`📦 Batches deleted: ${result.batches_deleted}`);
-      addResult(`📋 Accounts processed: ${Object.keys(result.gdrive.per_account).length}`);
-    } catch (error: any) {
-      addResult(`❌ Storage cleanup test failed: ${error.message}`);
-    }
-  };
-
   return (
     <div className="container mx-auto p-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Service Testing Page</h1>
@@ -139,13 +122,6 @@ export default function TestServicesPage() {
             className="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600"
           >
             Test Profile Loading
-          </button>
-          
-          <button
-            onClick={testStorageCleanup}
-            className="w-full bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600"
-          >
-            Test Storage Cleanup
           </button>
         </div>
         

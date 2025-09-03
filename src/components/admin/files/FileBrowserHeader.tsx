@@ -35,9 +35,10 @@ interface FileBrowserHeaderProps {
   loading?: boolean;
   onCleanup: () => void;
   onRefresh?: () => void;
+  onViewOrphaned?: () => void;
 }
 
-export function FileBrowserHeader({ stats, loading = false, onCleanup, onRefresh }: FileBrowserHeaderProps) {
+export function FileBrowserHeader({ stats, loading = false, onCleanup, onRefresh, onViewOrphaned }: FileBrowserHeaderProps) {
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 GB";
     const gb = bytes / (1024 * 1024 * 1024);
@@ -61,12 +62,21 @@ export function FileBrowserHeader({ stats, loading = false, onCleanup, onRefresh
               Refresh
             </button>
           )}
+          {onViewOrphaned && (
+            <button 
+              onClick={onViewOrphaned}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-white border rounded-lg text-slate-700 dark:text-slate-300 dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              <File className="w-4 h-4" />
+              View Orphaned Files
+            </button>
+          )}
           <button 
             onClick={onCleanup}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white border rounded-lg bg-amber-600 hover:bg-amber-700"
           >
             <Trash2 className="w-4 h-4" />
-            Orphaned Files Cleanup
+            Cleanup Orphaned Files
           </button>
         </div>
       </div>
