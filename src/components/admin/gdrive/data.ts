@@ -1,4 +1,4 @@
-import { GoogleDriveAccount, GoogleDriveStats, CacheInfo } from '@/types/gdrive';
+import { GoogleDriveAccount, GoogleDriveStats, CacheInfo } from '@/types/google-drive';
 
 export const mockStats: GoogleDriveStats = {
   total_accounts: 5,
@@ -11,6 +11,8 @@ export const mockStats: GoogleDriveStats = {
 export const mockCacheInfo: CacheInfo = {
   status: 'fresh',
   last_updated: new Date().toISOString(),
+  cache_expiry_seconds: 300, // 5 minutes
+  is_forced_refresh: false,
 };
 
 export const mockAccounts: GoogleDriveAccount[] = [

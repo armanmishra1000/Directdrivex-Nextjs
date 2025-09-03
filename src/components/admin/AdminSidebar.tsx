@@ -36,8 +36,7 @@ const navSections = [
   {
     title: "Storage",
     icon: HardDrive,
-    links: [
-      { href: "/admin-panel/storage", label: "Google Drive", icon: HardDrive },
+    links: [      { href: "/admin-panel/google-drive", label: "Google Drive", icon: HardDrive },
       { href: "/admin-panel/cleanup", label: "Storage Cleanup", icon: Trash2 },
       { href: "/admin-panel/backup", label: "Backup Management", icon: DatabaseBackup },
     ],

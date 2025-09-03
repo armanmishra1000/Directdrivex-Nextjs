@@ -213,6 +213,61 @@ class AdminSocketService {
       if (index > -1) this.eventHandlers.splice(index, 1);
     };
   }
+
+  /**
+   * Subscribe to Google Drive specific events
+   */
+  onGoogleDriveAccountUpdate(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-account-updated') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
+
+  onGoogleDriveStatsUpdate(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-stats-updated') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
+
+  onGoogleDriveOperationProgress(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-operation-progress') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
+
+  onGoogleDriveCacheUpdate(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-cache-updated') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
   
   /**
    * Subscribe to connection status changes
