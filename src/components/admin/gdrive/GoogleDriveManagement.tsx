@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { GoogleDriveAccount, GoogleDriveStats, CacheInfo } from '@/types/gdrive';
 import { mockAccounts, mockStats, mockCacheInfo } from './data';
 import { FaGoogleDrive } from 'react-icons/fa';
-import { Plus, RefreshCw, AlertTriangle, Loader2, Database, Activity, PieChart, CheckCircle, Clock, Info, Eye, Pause, Play, Trash2, UserX } from 'lucide-react';
+import { Plus, RefreshCw, AlertTriangle, Loader2, Database, Activity, PieChart, CheckCircle, Clock, Info, Eye, Pause, Play, Trash2, UserX, File, HardDrive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Utility functions
