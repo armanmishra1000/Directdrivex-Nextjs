@@ -31,6 +31,7 @@ const navSections = [
     icon: FolderOpen,
     links: [
       { href: "/admin-panel/files", label: "File Browser", icon: File },
+      { href: "/admin-panel/drive", label: "Drive Management", icon: HardDrive },
     ],
   },
   {
