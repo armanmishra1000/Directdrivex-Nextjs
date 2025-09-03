@@ -2,7 +2,7 @@ import {
   SecurityConfig, 
   AccessRule, 
   PasswordPolicy, 
-  SessionManagement, 
+  SessionManagement,
   SecurityEvent,
   SecurityScore,
   PasswordTestResult,
@@ -65,7 +65,7 @@ class SecurityService {
   async getSecurityConfig(): Promise<SecurityConfig> {
     try {
       console.log('Fetching security configuration...');
-      
+
       const response = await fetch(`${this.API_URL}${this.ENDPOINTS.SECURITY_CONFIG}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -146,7 +146,7 @@ class SecurityService {
   async getAccessRules(): Promise<AccessRule[]> {
     try {
       console.log('Fetching access rules...');
-      
+
       const response = await fetch(`${this.API_URL}${this.ENDPOINTS.ACCESS_RULES}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -363,7 +363,7 @@ class SecurityService {
   async getPasswordPolicy(): Promise<PasswordPolicy> {
     try {
       console.log('Fetching password policy...');
-      
+
       const response = await fetch(`${this.API_URL}${this.ENDPOINTS.PASSWORD_POLICY}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -444,7 +444,7 @@ class SecurityService {
   async getActiveSessions(): Promise<SessionManagement> {
     try {
       console.log('Fetching active sessions...');
-      
+
       const response = await fetch(`${this.API_URL}${this.ENDPOINTS.ACTIVE_SESSIONS}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -573,7 +573,7 @@ class SecurityService {
   async getSecurityEvents(filters?: any): Promise<SecurityEvent[]> {
     try {
       console.log('Fetching security events...');
-      
+
       const queryParams = new URLSearchParams();
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
@@ -611,7 +611,7 @@ class SecurityService {
   async getSecurityScore(): Promise<SecurityScore> {
     try {
       console.log('Calculating security score...');
-      
+
       const response = await fetch(`${this.API_URL}${this.ENDPOINTS.SECURITY_SCORE}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -670,7 +670,7 @@ class SecurityService {
   async testIPPattern(pattern: string): Promise<IPPatternTestResult> {
     try {
       console.log('Testing IP pattern:', pattern);
-      
+
       const response = await fetch(`${this.API_URL}${this.ENDPOINTS.IP_PATTERN_TEST}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
