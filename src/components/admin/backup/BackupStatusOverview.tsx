@@ -1,7 +1,7 @@
 "use client";
 
-import { File, Shield, Clock, AlertTriangle, Server, Database, Play, RefreshCw, Loader2 } from "lucide-react";
-import { BackupStatusOverviewProps } from "@/types/backup";
+import { File, Shield, Clock, AlertTriangle, Server, Database, Play, RefreshCw } from "lucide-react";
+import { BackupStatus } from "@/types/backup";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -35,21 +35,17 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, su
 );
 
 const formatBytes = (bytes: number) => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const index = Math.min(i, sizes.length - 1); // Ensure we don't exceed array bounds
-  return `${parseFloat((bytes / Math.pow(k, index)).toFixed(1))} ${sizes[index]}`;
+  if (bytes === 0) return "0 TB";
+  const tb = bytes / (1024 * 1024 * 1024 * 1024);
+  return `${tb.toFixed(1)} TB`;
 };
 
-export function BackupStatusOverview({ 
-  status, 
-  loading, 
-  onTriggerMassBackup, 
-  onRunCleanup, 
-  operationLoading 
-}: BackupStatusOverviewProps) {
+interface BackupStatusOverviewProps {
+  status: BackupStatus | null;
+  loading: boolean;
+}
+
+export function BackupStatusOverview({ status, loading }: BackupStatusOverviewProps) {
   const getHetznerStatus = () => {
     if (!status) return { text: 'Unknown', color: 'text-slate-500' };
     switch (status.hetzner_status) {
@@ -73,37 +69,11 @@ export function BackupStatusOverview({
         <StatCard title="Total Backup Size" value={formatBytes(status?.backup_summary.total_backup_size || 0)} icon={Database} color="bg-indigo-600" loading={loading} />
       </div>
       <div className="flex flex-wrap gap-4 mt-6">
-        <button 
-          onClick={onTriggerMassBackup}
-          disabled={operationLoading.massBackup || loading}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all duration-200",
-            "bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed",
-            "hover:shadow-lg hover:-translate-y-0.5"
-          )}
-        >
-          {operationLoading.massBackup ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Play className="w-4 h-4" />
-          )}
-          {operationLoading.massBackup ? 'Triggering...' : 'Trigger Mass Backup'}
+        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700">
+          <Play className="w-4 h-4" /> Trigger Mass Backup
         </button>
-        <button 
-          onClick={onRunCleanup}
-          disabled={operationLoading.cleanup || loading}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all duration-200",
-            "bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed",
-            "hover:shadow-lg hover:-translate-y-0.5"
-          )}
-        >
-          {operationLoading.cleanup ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-          {operationLoading.cleanup ? 'Cleaning...' : 'Run Cleanup'}
+        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700">
+          <RefreshCw className="w-4 h-4" /> Run Cleanup
         </button>
       </div>
     </div>

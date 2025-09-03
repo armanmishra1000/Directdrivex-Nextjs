@@ -73,7 +73,7 @@ export function SecuritySettings() {
   const hasUnsavedChanges = securitySettings.hasChanges || passwordPolicy.hasChanges;
   const isLoading = securitySettings.loading || accessRules.loading || passwordPolicy.loading || activeSessions.loading;
 
-    return (
+  return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -94,7 +94,7 @@ export function SecuritySettings() {
           >
             <RotateCcw className="w-4 h-4" /> Reset Changes
           </button>
-          <button
+          <button 
             onClick={handleSaveAll}
             disabled={!hasUnsavedChanges || isLoading}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -102,28 +102,28 @@ export function SecuritySettings() {
             <Save className="w-4 h-4" /> Save All Settings
           </button>
         </div>
-            </div>
+      </div>
 
       {/* Global Error Display */}
       {globalError && (
         <div className="flex items-center gap-3 p-4 text-red-800 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:text-red-200 dark:border-red-800">
           <AlertTriangle className="w-5 h-5" />
           <span className="text-sm font-medium">{globalError}</span>
-            <button
+          <button 
             onClick={() => setGlobalError("")}
             className="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-            >
-              ×
-            </button>
-          </div>
-        )}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Custom Tabs */}
       <div>
         <div className="grid w-full grid-cols-2 p-1 rounded-lg md:grid-cols-4 bg-slate-100 dark:bg-slate-800">
           {tabs.map(tab => (
-                <button
-                  key={tab.id}
+            <button
+              key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition-colors rounded-md",
@@ -133,31 +133,31 @@ export function SecuritySettings() {
               )}
             >
               <tab.icon className="w-4 h-4 mr-2" />
-                  {tab.label}
-                </button>
+              {tab.label}
+            </button>
           ))}
         </div>
         <div className="mt-6">
-            {activeTab === 'general' && (
-              <GeneralSecurityTab
-                securitySettings={securitySettings}
-              />
-            )}
-            {activeTab === 'access-rules' && (
-              <AccessRulesTab
-                accessRules={accessRules}
-              />
-            )}
-            {activeTab === 'password-policy' && (
-              <PasswordPolicyTab
-                passwordPolicy={passwordPolicy}
-              />
-            )}
-            {activeTab === 'sessions' && (
-              <ActiveSessionsTab
-                activeSessions={activeSessions}
-              />
-            )}
+          {activeTab === 'general' && (
+            <GeneralSecurityTab 
+              securitySettings={securitySettings}
+            />
+          )}
+          {activeTab === 'access-rules' && (
+            <AccessRulesTab 
+              accessRules={accessRules}
+            />
+          )}
+          {activeTab === 'password-policy' && (
+            <PasswordPolicyTab 
+              passwordPolicy={passwordPolicy}
+            />
+          )}
+          {activeTab === 'sessions' && (
+            <ActiveSessionsTab 
+              activeSessions={activeSessions}
+            />
+          )}
         </div>
       </div>
     </div>

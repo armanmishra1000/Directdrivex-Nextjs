@@ -320,66 +320,6 @@ class AdminSocketService {
   onOrphanedFilesCleanup(handler: (data: any) => void): () => void {
     return this.onFileBrowserEvent('orphaned_files_cleanup_complete', handler);
   }
-
-  /**
-   * Subscribe to backup management events
-   */
-  onBackupEvent(eventType: string, handler: (data: any) => void): () => void {
-    const wrappedHandler = (event: string) => {
-      try {
-        const data = JSON.parse(event);
-        if (data.type === eventType) {
-          handler(data.payload);
-        }
-      } catch {
-        // Not a JSON event, ignore
-      }
-    };
-
-    return this.onEvent(wrappedHandler);
-  }
-
-  /**
-   * Subscribe to backup status updates
-   */
-  onBackupStatusUpdate(handler: (data: any) => void): () => void {
-    return this.onBackupEvent('backup_status_update', handler);
-  }
-
-  /**
-   * Subscribe to backup queue updates
-   */
-  onBackupQueueUpdate(handler: (data: any) => void): () => void {
-    return this.onBackupEvent('backup_queue_update', handler);
-  }
-
-  /**
-   * Subscribe to backup failure updates
-   */
-  onBackupFailureUpdate(handler: (data: any) => void): () => void {
-    return this.onBackupEvent('backup_failure_update', handler);
-  }
-
-  /**
-   * Subscribe to backup progress updates
-   */
-  onBackupProgressUpdate(handler: (data: any) => void): () => void {
-    return this.onBackupEvent('backup_progress_update', handler);
-  }
-
-  /**
-   * Subscribe to mass backup completion
-   */
-  onMassBackupComplete(handler: (data: any) => void): () => void {
-    return this.onBackupEvent('mass_backup_complete', handler);
-  }
-
-  /**
-   * Subscribe to backup cleanup completion
-   */
-  onBackupCleanupComplete(handler: (data: any) => void): () => void {
-    return this.onBackupEvent('backup_cleanup_complete', handler);
-  }
 }
 
 export const adminSocketService = new AdminSocketService();
