@@ -20,20 +20,6 @@ export interface FileItem {
   version: number;
 }
 
-// Legacy interface for backward compatibility
-export interface LegacyFileItem {
-  id: string;
-  name: string;
-  size: number; // in bytes
-  type: FileType;
-  owner: string;
-  date: string; // ISO string
-  status: FileStatus;
-  storage: StorageLocation;
-  version: number;
-  integrityHash?: string;
-}
-
 // Storage stats matching Angular response
 export interface StorageStats {
   total_files: number;
@@ -151,8 +137,6 @@ export interface FilterState {
   owner: string;
   storage: StorageLocation | 'all';
   status: FileStatus | 'all';
-  sizeMin: number;
-  sizeMax: number;
 }
 
 // Enhanced sort config
@@ -167,32 +151,4 @@ export interface PaginationState {
   pageSize: number;
   totalItems: number;
   totalPages: number;
-}
-
-// ADD: Mapping utility for legacy compatibility
-export function mapLegacyToFileItem(legacy: any): FileItem {
-  return {
-    _id: legacy.id || legacy._id,
-    filename: legacy.name || legacy.filename,
-    size_bytes: legacy.size || legacy.size_bytes,
-    size_formatted: legacy.size_formatted || formatBytes(legacy.size || legacy.size_bytes),
-    content_type: legacy.content_type || 'application/octet-stream',
-    file_type: legacy.type || legacy.file_type,
-    upload_date: legacy.date || legacy.upload_date,
-    owner_email: legacy.owner || legacy.owner_email,
-    status: legacy.status,
-    storage_location: legacy.storage || legacy.storage_location,
-    download_url: legacy.download_url || `/api/files/${legacy.id || legacy._id}/download`,
-    preview_available: legacy.preview_available,
-    integrity_hash: legacy.integrityHash || legacy.integrity_hash,
-    version: legacy.version || 1
-  };
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
