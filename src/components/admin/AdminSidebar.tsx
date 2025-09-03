@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, Users, FolderOpen, HardDrive, Server, Bell, BarChart2, UserPlus, File, Bot, Shield, DatabaseBackup, Activity, Settings, FileText, RefreshCw, Trash2
+  Home, Users, FolderOpen, HardDrive, Server, UserPlus, File, Shield, DatabaseBackup, Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -14,7 +14,6 @@ const navSections = [
     icon: Home,
     links: [
       { href: "/admin-panel", label: "Home", icon: Home },
-      { href: "/admin-panel/analytics", label: "User Analytics", icon: BarChart2 },
     ],
   },
   {
@@ -37,8 +36,7 @@ const navSections = [
     title: "Storage",
     icon: HardDrive,
     links: [
-      { href: "/admin-panel/storage", label: "Google Drive", icon: HardDrive },
-      { href: "/admin-panel/cleanup", label: "Storage Cleanup", icon: Trash2 },
+      { href: "/admin-panel/gdrive", label: "Google Drive", icon: HardDrive },
       { href: "/admin-panel/backup", label: "Backup Management", icon: DatabaseBackup },
     ],
   },
@@ -47,17 +45,7 @@ const navSections = [
     icon: Server,
     links: [
       { href: "/admin-panel/monitoring", label: "Monitoring", icon: Server },
-      { href: "/admin-panel/processes", label: "Background Processes", icon: Bot },
       { href: "/admin-panel/security", label: "Security Settings", icon: Shield },
-      { href: "/admin-panel/system-logs", label: "System Logs", icon: FileText },
-    ],
-  },
-  {
-    title: "Communication",
-    icon: Bell,
-    links: [
-      { href: "/admin-panel/notifications", label: "Notifications", icon: Bell },
-      { href: "/admin-panel/reports", label: "Reports & Export", icon: BarChart2 },
     ],
   },
 ];
@@ -104,15 +92,6 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
             </div>
           ))}
         </nav>
-        <div className="p-2 border-t border-slate-400/20 dark:border-slate-400/10">
-            <button className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600",
-                collapsed && "justify-center"
-            )}>
-                <RefreshCw className="w-5 h-5" />
-                {!collapsed && <span>Refresh Stats</span>}
-            </button>
-        </div>
       </div>
     </aside>
   );
