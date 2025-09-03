@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { usePathname } from "next/navigation";
 import { MainLayoutWrapper } from "@/components/layout/MainLayoutWrapper";
 
 const inter = Inter({
