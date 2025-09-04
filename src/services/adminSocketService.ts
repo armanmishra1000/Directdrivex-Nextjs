@@ -213,6 +213,61 @@ class AdminSocketService {
       if (index > -1) this.eventHandlers.splice(index, 1);
     };
   }
+
+  /**
+   * Subscribe to Google Drive specific events
+   */
+  onGoogleDriveAccountUpdate(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-account-updated') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
+
+  onGoogleDriveStatsUpdate(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-stats-updated') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
+
+  onGoogleDriveOperationProgress(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-operation-progress') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
+
+  onGoogleDriveCacheUpdate(handler: (data: any) => void): () => void {
+    return this.onEvent((event) => {
+      try {
+        const parsed = JSON.parse(event);
+        if (parsed.type === 'google-drive-cache-updated') {
+          handler(parsed.data);
+        }
+      } catch (error) {
+        // Ignore non-JSON events
+      }
+    });
+  }
   
   /**
    * Subscribe to connection status changes
@@ -266,6 +321,121 @@ class AdminSocketService {
     } else {
       console.warn('Cannot send message: WebSocket not connected');
     }
+  }
+
+
+
+  /**
+   * Subscribe to backup management events
+   */
+  onBackupEvent(eventType: string, handler: (data: any) => void): () => void {
+    const wrappedHandler = (event: string) => {
+      try {
+        const data = JSON.parse(event);
+        if (data.type === eventType) {
+          handler(data.payload);
+        }
+      } catch {
+        // Not a JSON event, ignore
+      }
+    };
+
+    return this.onEvent(wrappedHandler);
+  }
+
+  /**
+   * Subscribe to backup status updates
+   */
+  onBackupStatusUpdate(handler: (data: any) => void): () => void {
+    return this.onBackupEvent('backup_status_update', handler);
+  }
+
+  /**
+   * Subscribe to backup queue updates
+   */
+  onBackupQueueUpdate(handler: (data: any) => void): () => void {
+    return this.onBackupEvent('backup_queue_update', handler);
+  }
+
+  /**
+   * Subscribe to backup failure updates
+   */
+  onBackupFailureUpdate(handler: (data: any) => void): () => void {
+    return this.onBackupEvent('backup_failure_update', handler);
+  }
+
+  /**
+   * Subscribe to backup progress updates
+   */
+  onBackupProgressUpdate(handler: (data: any) => void): () => void {
+    return this.onBackupEvent('backup_progress_update', handler);
+  }
+
+  /**
+   * Subscribe to mass backup completion
+   */
+  onMassBackupComplete(handler: (data: any) => void): () => void {
+    return this.onBackupEvent('mass_backup_complete', handler);
+  }
+
+  /**
+   * Subscribe to backup cleanup completion
+   */
+  onBackupCleanupComplete(handler: (data: any) => void): () => void {
+    return this.onBackupEvent('backup_cleanup_complete', handler);
+  }
+
+  /**
+   * Subscribe to file browser specific events
+   */
+  onFileBrowserEvent(eventType: string, handler: (data: any) => void): () => void {
+    const wrappedHandler = (event: string) => {
+      try {
+        const data = JSON.parse(event);
+        if (data.type === eventType) {
+          handler(data.payload);
+        }
+      } catch {
+        // Not a JSON event, ignore
+      }
+    };
+
+    return this.onEvent(wrappedHandler);
+  }
+
+  /**
+   * Subscribe to file integrity check events
+   */
+  onFileIntegrityCheck(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('file_integrity_check_complete', handler);
+  }
+
+  /**
+   * Subscribe to file backup events
+   */
+  onFileBackup(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('file_backup_complete', handler);
+  }
+
+  /**
+   * Subscribe to file recovery events
+   */
+  onFileRecovery(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('file_recovery_complete', handler);
+  }
+
+  /**
+   * Subscribe to storage stats updates
+   */
+  onStorageStatsUpdate(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('storage_stats_updated', handler);
+  }
+
+  /**
+   * Subscribe to orphaned files cleanup events
+   */
+  onOrphanedFilesCleanup(handler: (data: any) => void): () => void {
+    return this.onFileBrowserEvent('orphaned_files_cleanup_complete', handler);
   }
 }
 
