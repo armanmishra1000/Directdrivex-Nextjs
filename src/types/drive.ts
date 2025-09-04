@@ -3,16 +3,18 @@ export type BackupStatus = 'none' | 'in_progress' | 'completed' | 'failed';
 
 export interface DriveFileItem {
   _id: string;
-  filename: string;
-  size_bytes: number;
-  size_formatted: string;
-  content_type: string;
-  file_type: FileType;
-  upload_date: string;
-  owner_email: string;
-  gdrive_account_id: string;
-  backup_status: BackupStatus;
-  download_url: string;
+  filename?: string;
+  size_bytes?: number;
+  size_formatted?: string;
+  content_type?: string;
+  file_type?: FileType;
+  upload_date?: string;
+  owner_email?: string;
+  status?: string;
+  storage_location?: string;
+  backup_status?: BackupStatus;
+  gdrive_account_id?: string;
+  download_url?: string;
   preview_available?: boolean;
 }
 
@@ -36,6 +38,13 @@ export interface FileTypeAnalyticsItem {
 export interface FileTypeAnalytics {
   file_types: FileTypeAnalyticsItem[];
   total_files: number;
+  backup_distribution: { [key: string]: number };
+  account_distribution: {
+    account_id: string;
+    count: number;
+    total_size: number;
+    size_formatted: string;
+  }[];
 }
 
 export interface DriveFileListResponse {

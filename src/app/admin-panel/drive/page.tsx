@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import { DriveHeader } from '@/components/admin/drive/DriveHeader';
 import { DriveFilters } from '@/components/admin/drive/DriveFilters';
 import { DriveAnalytics } from '@/components/admin/drive/DriveAnalytics';
@@ -8,37 +7,64 @@ import { DriveBulkActions } from '@/components/admin/drive/DriveBulkActions';
 import { DriveListView } from '@/components/admin/drive/DriveListView';
 import { DriveGridView } from '@/components/admin/drive/DriveGridView';
 import { DrivePagination } from '@/components/admin/drive/DrivePagination';
-import { mockFiles, mockDriveStats, mockFileTypeAnalytics } from '@/components/admin/drive/data';
-import { DriveFileItem, DriveStats, FileTypeAnalytics } from '@/types/drive';
+import { useDriveFileManagement } from '@/hooks/useDriveFileManagement';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Cloud } from 'lucide-react';
 
 export default function DriveManagementPage() {
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [showFilters, setShowFilters] = useState(false);
-  const [files, setFiles] = useState<DriveFileItem[]>([]);
-  const [stats, setStats] = useState<DriveStats | null>(null);
-  const [analytics, setAnalytics] = useState<FileTypeAnalytics | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    files,
+    stats,
+    analytics,
+    currentPage,
+    totalPages,
+    totalFiles,
+    pageSize,
+    loading,
+    error,
+    filters,
+    showFilters,
+    selectedFiles,
+    sortBy,
+    sortOrder,
+    viewMode,
+    loadFiles,
+    setFilters,
+    clearFilters,
+    setShowFilters,
+    toggleFileSelection,
+    selectAllFiles,
+    clearSelection,
+    setSortBy,
+    setPage,
+    setViewMode,
+    downloadFile,
+    checkIntegrity,
+    moveFile,
+    forceBackup,
+    recoverFile,
+    deleteFile,
+    previewFile,
+    executeBulkAction,
+  } = useDriveFileManagement();
 
-  useEffect(() => {
-    // Simulate data loading
-    setTimeout(() => {
-      setFiles(mockFiles);
-      setStats(mockDriveStats);
-      setAnalytics(mockFileTypeAnalytics);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const handleClearFilters = () => {
-    // Logic to clear filters
-  };
-
-  if (loading) {
+  if (loading && files.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-16 h-16 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" />
+        <span className="ml-3 text-slate-600 dark:text-slate-400">Loading drive files...</span>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage 
+        message={error} 
+        onRetry={loadFiles}
+      />
     );
   }
 
@@ -49,30 +75,72 @@ export default function DriveManagementPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onToggleFilters={() => setShowFilters(!showFilters)}
-        onRefresh={() => {}}
+        onRefresh={loadFiles}
       />
+      
       <DriveFilters
         showFilters={showFilters}
-        onClearFilters={handleClearFilters}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onSearch={() => loadFiles()}
+        onClearFilters={clearFilters}
       />
-      <DriveAnalytics analytics={analytics} />
-      <DriveBulkActions selectedCount={selectedFiles.length} onClear={() => setSelectedFiles([])} />
       
-      <div className="overflow-hidden border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
-        {viewMode === 'list' ? (
-          <DriveListView files={files} />
-        ) : (
-          <div className="p-4">
-            <DriveGridView files={files} />
-          </div>
-        )}
-        <DrivePagination
-          currentPage={1}
-          totalPages={10}
-          totalFiles={stats?.total_files || 0}
-          onPageChange={() => {}}
+      <DriveAnalytics analytics={analytics} />
+      
+      <DriveBulkActions 
+        selectedCount={selectedFiles.length} 
+        onClear={clearSelection}
+        onExecute={executeBulkAction}
+      />
+      
+      {files.length === 0 ? (
+        <EmptyState
+          icon={Cloud}
+          title="No drive files found"
+          description="Try adjusting your search or filter criteria."
         />
-      </div>
+      ) : (
+        <div className="overflow-hidden border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
+          {viewMode === 'list' ? (
+            <DriveListView 
+              files={files}
+              selectedFiles={selectedFiles}
+              onToggleSelection={toggleFileSelection}
+              onSelectAll={selectAllFiles}
+              onSort={setSortBy}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onDownload={downloadFile}
+              onCheckIntegrity={checkIntegrity}
+              onMove={moveFile}
+              onForceBackup={forceBackup}
+              onRecover={recoverFile}
+              onDelete={deleteFile}
+              onPreview={previewFile}
+            />
+          ) : (
+            <div className="p-4">
+              <DriveGridView 
+                files={files}
+                selectedFiles={selectedFiles}
+                onToggleSelection={toggleFileSelection}
+                onDownload={downloadFile}
+                onPreview={previewFile}
+                onDelete={deleteFile}
+              />
+            </div>
+          )}
+          
+          <DrivePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalFiles={totalFiles}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

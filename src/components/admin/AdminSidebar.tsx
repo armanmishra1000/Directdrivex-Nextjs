@@ -32,6 +32,7 @@ const navSections = [
     links: [
       { href: "/admin-panel/files", label: "File Browser", icon: File },
       { href: "/admin-panel/drive", label: "Drive Management", icon: HardDrive },
+      { href: "/admin-panel/hetzner", label: "Hetzner Management", icon: Server },
     ],
   },
   {
