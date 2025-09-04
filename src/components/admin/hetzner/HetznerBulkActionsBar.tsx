@@ -1,7 +1,5 @@
-"use client";
-
-import { CheckSquare, Trash2, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useState } from 'react';
+import { Download, RotateCcw, Trash2, X, Loader2 } from 'lucide-react';
 
 interface HetznerBulkActionsBarProps {
   selectedCount: number;
@@ -12,28 +10,88 @@ interface HetznerBulkActionsBarProps {
 export function HetznerBulkActionsBar({ selectedCount, onExecute, onClear }: HetznerBulkActionsBarProps) {
   const [action, setAction] = useState('');
   const [reason, setReason] = useState('');
+  const [isExecuting, setIsExecuting] = useState(false);
 
-  if (selectedCount === 0) return null;
+  const handleExecute = async () => {
+    if (!action) return;
+    
+    setIsExecuting(true);
+    try {
+      await onExecute(action, reason || undefined);
+      setAction('');
+      setReason('');
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  if (selectedCount === 0) {
+    return null;
+  }
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 p-4 border shadow-md sm:flex-row bg-gradient-to-r from-emerald-50 to-green-100 dark:from-emerald-900/50 dark:to-green-900/50 rounded-2xl border-emerald-200 dark:border-emerald-800">
-      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
-        <CheckSquare className="w-5 h-5" />
-        <span>{selectedCount} {selectedCount === 1 ? 'file' : 'files'} selected</span>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <select value={action} onChange={(e) => setAction(e.target.value)} className="h-10 px-3 text-sm bg-white border rounded-lg dark:bg-slate-800 border-slate-300 dark:border-slate-600">
-          <option value="">Choose action...</option>
-          <option value="delete">Delete from Backup</option>
-          <option value="recover">Recover from Backup</option>
-        </select>
-        <input type="text" placeholder="Reason (optional)" value={reason} onChange={(e) => setReason(e.target.value)} className="h-10 px-3 text-sm bg-white border rounded-lg dark:bg-slate-800 border-slate-300 dark:border-slate-600" />
-        <button onClick={() => onExecute(action, reason)} disabled={!action} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">
-          Execute
-        </button>
-        <button onClick={onClear} className="px-4 py-2 text-sm font-medium bg-white border rounded-lg text-slate-700 dark:text-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600">
-          Cancel
-        </button>
+    <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl shadow-lg p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 text-white">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="font-medium">
+              {selectedCount} file{selectedCount !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <select
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            className="px-3 py-2 bg-white/20 text-white rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
+            disabled={isExecuting}
+          >
+            <option value="">Select Action</option>
+            <option value="download">Download Selected</option>
+            <option value="recover">Recover from Backup</option>
+            <option value="delete">Delete from Backup</option>
+          </select>
+
+          {action === 'recover' || action === 'delete' ? (
+            <input
+              type="text"
+              placeholder="Reason (optional)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="px-3 py-2 bg-white/20 text-white placeholder-white/70 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 w-48"
+              disabled={isExecuting}
+            />
+          ) : null}
+
+          <button
+            onClick={handleExecute}
+            disabled={!action || isExecuting}
+            className="flex items-center space-x-2 px-4 py-2 bg-white text-emerald-600 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {isExecuting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : action === 'download' ? (
+              <Download className="w-4 h-4" />
+            ) : action === 'recover' ? (
+              <RotateCcw className="w-4 h-4" />
+            ) : action === 'delete' ? (
+              <Trash2 className="w-4 h-4" />
+            ) : null}
+            <span>
+              {isExecuting ? 'Executing...' : 'Execute'}
+            </span>
+          </button>
+
+          <button
+            onClick={onClear}
+            disabled={isExecuting}
+            className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

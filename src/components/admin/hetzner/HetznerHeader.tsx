@@ -1,6 +1,4 @@
-"use client";
-
-import { Server, SlidersHorizontal, RefreshCw } from "lucide-react";
+import { Server, Filter, RefreshCw, Loader2 } from 'lucide-react';
 
 interface HetznerHeaderProps {
   loading: boolean;
@@ -11,34 +9,52 @@ interface HetznerHeaderProps {
 
 export function HetznerHeader({ loading, showFilters, onToggleFilters, onRefresh }: HetznerHeaderProps) {
   return (
-    <div className="relative p-8 overflow-hidden border shadow-lg bg-gradient-to-br from-slate-700 to-slate-900 dark:from-slate-800 dark:to-black border-slate-700 rounded-2xl">
-      <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%20width=%2232%22%20height=%2232%22%20fill=%22none%22%20stroke=%22rgb(255%20255%20255%20/%200.1)%22%3E%3Cpath%20d=%22M0%20.5H31.5V32%22/%3E%3C/svg%3E')]"></div>
-      <div className="relative z-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg">
-            <Server className="w-8 h-8 text-white" />
+    <div className="relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl shadow-xl">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20" />
+      
+      <div className="relative p-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-xl">
+              <Server className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Hetzner File Management
+              </h1>
+              <p className="text-slate-300 text-lg">
+                Manage your Hetzner cloud storage backup files with advanced analytics and monitoring
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-white">Hetzner File Management</h1>
-            <p className="mt-1 text-slate-300">Manage and monitor your Hetzner storage backup files with advanced analytics.</p>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onToggleFilters}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                showFilters
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filters</span>
+            </button>
+            
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span>Refresh</span>
+            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleFilters}
-            className={`flex items-center gap-2 px-4 py-2 font-semibold text-white transition-colors border-2 rounded-lg border-slate-600 hover:bg-slate-700 ${showFilters ? 'bg-slate-700' : 'bg-slate-800/50'}`}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Filters</span>
-          </button>
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 font-semibold text-white transition-colors border-2 rounded-lg bg-slate-800/50 border-slate-600 hover:bg-slate-700 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
     </div>
