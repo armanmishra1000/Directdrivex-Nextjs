@@ -1,7 +1,6 @@
 "use client";
 
 import { Clock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 
 export function ScheduledReportsTab() {
   const features = [
@@ -12,8 +11,8 @@ export function ScheduledReportsTab() {
   ];
 
   return (
-    <Card className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 shadow-slate-900/5 dark:shadow-black/10 shadow-lg">
-      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="p-6 border shadow-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20 dark:border-slate-400/10 rounded-2xl shadow-slate-900/5 dark:shadow-black/10">
+      <div className="flex flex-col items-center justify-center py-12 text-center">
         <div className="p-4 mb-6 bg-purple-100 rounded-full dark:bg-purple-900/30">
           <Clock className="w-12 h-12 text-purple-600 dark:text-purple-400" />
         </div>
@@ -31,7 +30,7 @@ export function ScheduledReportsTab() {
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

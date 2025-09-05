@@ -1,12 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { GenerateReportsTab } from "@/components/admin/reports/GenerateReportsTab";
 import { ReportTemplatesTab } from "@/components/admin/reports/ReportTemplatesTab";
 import { CustomReportsTab } from "@/components/admin/reports/CustomReportsTab";
 import { ScheduledReportsTab } from "@/components/admin/reports/ScheduledReportsTab";
 import { BarChart3, FileText, Plus, Calendar } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 export default function ReportsExportPage() {
   const {
@@ -34,13 +35,13 @@ export default function ReportsExportPage() {
   ];
 
   const handleExport = (format: 'json' | 'csv') => {
-    if (!currentReport) return;
-    const data = format === 'json' ? JSON.stringify(currentReport, null, 2) : 'CSV export not implemented yet.';
-    const blob = new Blob([data], { type: format === 'json' ? 'application/json' : 'text/csv' });
+    // This is a placeholder. In a real app, you'd trigger a download.
+    const data = JSON.stringify(currentReport, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${currentReport.report_info.title.replace(/\s/g, '_')}.${format}`;
+    a.download = `${currentReport?.report_info.title.replace(/\s/g, '_')}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -60,49 +61,58 @@ export default function ReportsExportPage() {
         </div>
       </div>
 
-      {/* Tab Navigation using shadcn/ui Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+      {/* Tab Navigation */}
+      <div className="border rounded-lg shadow-sm bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-slate-400/20">
+        <div className="flex overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
-              <TabsTrigger key={tab.id} value={tab.id}>
-                <Icon className="w-4 h-4 mr-2" />
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2",
+                  isActive
+                    ? "text-blue-600 dark:text-blue-400 border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                    : "text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                )}
+              >
+                <Icon className="w-4 h-4" />
                 {tab.label}
-              </TabsTrigger>
+              </button>
             );
           })}
-        </TabsList>
-        
-        <div className="mt-6 min-h-[600px]">
-          <TabsContent value="generate">
-            <GenerateReportsTab
-              formState={reportForm}
-              setFormState={setReportForm}
-              onGenerate={generateReport}
-              currentReport={currentReport}
-              onCloseReport={clearCurrentReport}
-              onExportReport={handleExport}
-              loading={loading}
-            />
-          </TabsContent>
-          <TabsContent value="templates">
-            <ReportTemplatesTab templates={templates} onUseTemplate={useTemplate} />
-          </TabsContent>
-          <TabsContent value="custom">
-            <CustomReportsTab
-              formState={customReportForm}
-              setFormState={setCustomReportForm}
-              onGenerate={generateCustomReport}
-              onReset={resetCustomReport}
-              loading={loading}
-            />
-          </TabsContent>
-          <TabsContent value="scheduled">
-            <ScheduledReportsTab />
-          </TabsContent>
         </div>
-      </Tabs>
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[600px]">
+        {activeTab === 'generate' && (
+          <GenerateReportsTab
+            formState={reportForm}
+            setFormState={setReportForm}
+            onGenerate={generateReport}
+            currentReport={currentReport}
+            onCloseReport={clearCurrentReport}
+            onExportReport={handleExport}
+            loading={loading}
+          />
+        )}
+        {activeTab === 'templates' && (
+          <ReportTemplatesTab templates={templates} onUseTemplate={useTemplate} />
+        )}
+        {activeTab === 'custom' && (
+          <CustomReportsTab
+            formState={customReportForm}
+            setFormState={setCustomReportForm}
+            onGenerate={generateCustomReport}
+            onReset={resetCustomReport}
+            loading={loading}
+          />
+        )}
+        {activeTab === 'scheduled' && <ScheduledReportsTab />}
+      </div>
     </div>
   );
 }
