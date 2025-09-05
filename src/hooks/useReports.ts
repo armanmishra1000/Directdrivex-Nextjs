@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   ReportTemplate,
   ReportFormState,
@@ -45,19 +45,35 @@ export function useReports(): UseReportsReturn {
     fields: [],
   });
 
-  const setReportForm = (form: Partial<ReportFormState>) => setReportFormState(prev => ({ ...prev, ...form }));
-  const setCustomReportForm = (form: Partial<CustomReportFormState>) => setCustomReportFormState(prev => ({ ...prev, ...form }));
+  const setReportForm = useCallback((form: Partial<ReportFormState>) => {
+    setReportFormState(prev => ({ ...prev, ...form }));
+  }, []);
+
+  const setCustomReportForm = useCallback((form: Partial<CustomReportFormState>) => {
+    setCustomReportFormState(prev => ({ ...prev, ...form }));
+  }, []);
 
   const loadTemplates = useCallback(async () => {
     try {
       const data = await reportsService.getReportTemplates();
       setTemplates(data);
     } catch (error) {
+      console.error('Failed to load templates:', error);
       toastService.error('Failed to load report templates');
     }
   }, []);
 
   const generateReport = useCallback(async () => {
+    if (!reportForm.date_from || !reportForm.date_to) {
+      toastService.error('Please select date range');
+      return;
+    }
+
+    if (new Date(reportForm.date_from) >= new Date(reportForm.date_to)) {
+      toastService.error('Start date must be before end date');
+      return;
+    }
+
     setLoading(true);
     setCurrentReport(null);
     try {
@@ -65,6 +81,7 @@ export function useReports(): UseReportsReturn {
       setCurrentReport(report);
       toastService.success('Report generated successfully!');
     } catch (error) {
+      console.error('Failed to generate report:', error);
       toastService.error('Failed to generate report');
     } finally {
       setLoading(false);
@@ -72,36 +89,63 @@ export function useReports(): UseReportsReturn {
   }, [reportForm]);
 
   const generateCustomReport = useCallback(async () => {
+    if (!customReportForm.title) {
+      toastService.error('Please enter a report title');
+      return;
+    }
+
+    if (customReportForm.data_sources.length === 0) {
+      toastService.error('Please select at least one data source');
+      return;
+    }
+
+    if (!customReportForm.date_from || !customReportForm.date_to) {
+      toastService.error('Please select date range');
+      return;
+    }
+
+    if (new Date(customReportForm.date_from) >= new Date(customReportForm.date_to)) {
+      toastService.error('Start date must be before end date');
+      return;
+    }
+
     setLoading(true);
     setCurrentReport(null);
     try {
       const report = await reportsService.generateCustomReport(customReportForm);
       setCurrentReport(report);
-      toastService.success('Custom report generated successfully!');
       setActiveTab('generate'); // Switch to view the report
+      toastService.success('Custom report generated successfully!');
     } catch (error) {
+      console.error('Failed to generate custom report:', error);
       toastService.error('Failed to generate custom report');
     } finally {
       setLoading(false);
     }
   }, [customReportForm]);
 
-  const clearCurrentReport = () => setCurrentReport(null);
+  const clearCurrentReport = useCallback(() => {
+    setCurrentReport(null);
+  }, []);
 
-  const useTemplate = (template: ReportTemplate) => {
+  const useTemplate = useCallback((template: ReportTemplate) => {
     const today = new Date();
     const fromDate = new Date(today.getTime() - template.default_period_days * 24 * 60 * 60 * 1000);
+    
     setReportForm({
       report_type: template.type,
       export_format: 'json',
       date_from: fromDate.toISOString().split('T')[0],
       date_to: today.toISOString().split('T')[0],
+      include_inactive: false,
+      group_by: 'user'
     });
+    
     setActiveTab('generate');
-    toastService.info(`Template "${template.name}" applied.`);
-  };
+    toastService.info(`Template "${template.name}" loaded`);
+  }, [setReportForm]);
 
-  const resetCustomReport = () => {
+  const resetCustomReport = useCallback(() => {
     setCustomReportFormState({
       title: '',
       description: '',
@@ -111,11 +155,11 @@ export function useReports(): UseReportsReturn {
       data_sources: [],
       fields: [],
     });
-  };
+  }, []);
 
-  useState(() => {
+  useEffect(() => {
     loadTemplates();
-  });
+  }, [loadTemplates]);
 
   return {
     loading,
