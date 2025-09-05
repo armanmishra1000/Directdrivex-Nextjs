@@ -1,3 +1,8 @@
+/**
+ * User Analytics Type Definitions
+ * Comprehensive analytics data structures for DirectDriveX admin panel
+ */
+
 export interface ActiveUsersStats {
   total_active: number;
   daily_active: number;
@@ -35,6 +40,42 @@ export interface UserRetentionMetrics {
   retention_rate_30d: number;
   churn_rate: number;
   new_users_last_30d: number;
+}
+
+export interface StatCardProps {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  mainMetric: string;
+  label: string;
+  breakdown?: Array<{ label: string; value: string; color?: string }>;
+  loading: boolean;
+  error?: string;
+}
+
+export interface RegistrationTrendsChartProps {
+  data: RegistrationTrends | null;
+  loading: boolean;
+  error?: string;
+  onPeriodChange: (period: string) => void;
+}
+
+export interface GeographicDistributionProps {
+  data: GeographicDistribution | null;
+  loading: boolean;
+  error?: string;
+}
+
+export interface StorageDistributionProps {
+  data: StorageUsageAnalytics | null;
+  loading: boolean;
+  error?: string;
+}
+
+export interface ActivityPatternsProps {
+  data: ActivityPatterns | null;
+  loading: boolean;
+  error?: string;
+  onPeriodChange: (period: string) => void;
 }
 
 export interface UseUserAnalyticsReturn {
