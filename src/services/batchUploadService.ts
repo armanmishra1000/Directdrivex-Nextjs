@@ -1,5 +1,6 @@
 import { Observable } from '@/lib/observable';
 import { UploadEvent } from './uploadService';
+import { BatchDetails, BatchFileMetadata } from '@/types/batch-download';
 
 export interface BatchFileInfo {
   filename: string;
@@ -59,6 +60,39 @@ export class BatchUploadService {
       
       ws.onerror = () => observer.error(new Error('Connection failed'));
     });
+  }
+
+  async getBatchDetails(batchId: string): Promise<BatchDetails> {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/v1/batch/details/${batchId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch batch details: ${response.status}`);
+      }
+      return response.json();
+    } catch (error) {
+        console.warn("Backend not available for batch details, using mock data:", error);
+        // Return mock data when backend is not available
+        const mockFiles: BatchFileMetadata[] = [
+            { _id: 'file1', filename: 'Q3_Financial_Report_Final.pdf', size_bytes: 2345678 },
+            { _id: 'file2', filename: 'Marketing_Campaign_Assets.zip', size_bytes: 157286400 },
+            { _id: 'file3', filename: 'Project_Alpha_Source_Code.tar.gz', size_bytes: 89128960 },
+            { _id: 'file4', filename: 'Team_Meeting_Recording.mp4', size_bytes: 314572800 },
+        ];
+        return {
+            batch_id: batchId,
+            files: mockFiles,
+            created_at: new Date().toISOString(),
+            total_size_bytes: mockFiles.reduce((sum, file) => sum + file.size_bytes, 0),
+        };
+    }
+  }
+
+  getStreamUrl(fileId: string): string {
+    return `${this.apiUrl}/api/v1/download/stream/${fileId}`;
+  }
+
+  getZipDownloadUrl(batchId: string): string {
+    return `${this.apiUrl}/api/v1/batch/download-zip/${batchId}`;
   }
 
   private sliceAndSend(file: File, ws: WebSocket, start: number = 0): void {

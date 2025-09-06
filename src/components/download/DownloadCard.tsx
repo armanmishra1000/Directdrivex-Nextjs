@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileMeta, PreviewMeta } from '@/types/download';
 import { FilePreview } from './FilePreview';
 import { fileService } from '@/services/fileService';
+import { analyticsService } from '@/services/analyticsService';
 import { Download, Eye, X, File as FileIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,10 +24,34 @@ export function DownloadCard({ fileMeta, previewMeta }: DownloadCardProps) {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
-  const downloadUrl = fileService.getDownloadUrl(fileMeta.file_id);
+  // Handle both file_id and _id field names from backend
+  const fileId = fileMeta.file_id || (fileMeta as any)._id;
+  const downloadUrl = fileId ? fileService.getDownloadUrl(fileId) : '#';
+
+
+  const handlePreviewToggle = () => {
+    setShowPreview(!showPreview);
+    if (fileId && typeof window !== 'undefined') {
+      analyticsService.trackPreviewToggled(
+        fileId,
+        !showPreview,
+        previewMeta.preview_type
+      );
+    }
+  };
+
+  const handleDownloadClick = () => {
+    if (fileId && typeof window !== 'undefined') {
+      analyticsService.trackDownloadInitiated(
+        fileId,
+        previewMeta.preview_available,
+        previewMeta.preview_type
+      );
+    }
+  };
 
   return (
-    <div className="w-full max-w-4xl p-6 sm:p-8 bg-white rounded-2xl shadow-2xl shadow-bolt-black/10 border border-slate-200/50">
+    <div className="w-full max-w-4xl p-6 sm:p-8 bg-white rounded-2xl shadow-2xl shadow-bolt-black/10 border border-bolt-cyan/20">
       <div className="text-center">
         <div className="inline-block p-4 mb-4 bg-gradient-to-br from-bolt-blue/10 to-bolt-cyan/10 rounded-2xl">
           <FileIcon className="w-12 h-12 text-bolt-blue" strokeWidth={1.5} />
@@ -42,11 +67,11 @@ export function DownloadCard({ fileMeta, previewMeta }: DownloadCardProps) {
       <div className="mt-8 space-y-4">
         {previewMeta.preview_available ? (
           <button
-            onClick={() => setShowPreview(!showPreview)}
+            onClick={handlePreviewToggle}
             className={cn(
               "w-full flex items-center justify-center gap-2 text-base font-semibold py-3 rounded-xl transition-all duration-300",
               showPreview 
-                ? "bg-slate-200 text-slate-700 hover:bg-slate-300" 
+                ? "bg-bolt-cyan/20 text-bolt-black/80 hover:bg-bolt-cyan/30" 
                 : "bg-bolt-blue text-white hover:bg-bolt-blue/90"
             )}
           >
@@ -54,14 +79,15 @@ export function DownloadCard({ fileMeta, previewMeta }: DownloadCardProps) {
             {showPreview ? 'Hide Preview' : `Preview ${previewMeta.preview_type}`}
           </button>
         ) : (
-          <div className="p-4 text-center bg-bolt-light-blue/50 rounded-xl">
-            <p className="text-sm text-bolt-blue">{previewMeta.message || 'Preview is not available for this file type.'}</p>
+          <div className="p-4 text-center bg-gradient-to-br from-bolt-cyan/10 to-bolt-blue/10 rounded-xl border border-bolt-blue/20">
+            <p className="text-sm text-bolt-cyan">{previewMeta.message || 'Preview is not available for this file type.'}</p>
           </div>
         )}
 
         <a
           href={downloadUrl}
-          download
+          download={fileMeta.filename}
+          onClick={handleDownloadClick}
           className="w-full flex items-center justify-center gap-3 text-lg font-bold py-4 rounded-xl text-white bg-gradient-to-r from-bolt-blue to-bolt-purple hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
         >
           <Download className="w-6 h-6" />
@@ -69,12 +95,15 @@ export function DownloadCard({ fileMeta, previewMeta }: DownloadCardProps) {
         </a>
       </div>
 
-      {showPreview && previewMeta.preview_available && (
-        <FilePreview 
-          fileId={fileMeta.file_id} 
-          fileName={fileMeta.filename}
-          previewType={previewMeta.preview_type} 
-        />
+      {showPreview && previewMeta.preview_available && fileId && (
+        <div className="mt-6">
+          <FilePreview 
+            fileId={fileId} 
+            fileName={fileMeta.filename}
+            previewType={previewMeta.preview_type}
+            contentType={fileMeta.content_type}
+          />
+        </div>
       )}
     </div>
   );
