@@ -36,16 +36,16 @@ export function ComparisonSection() {
   const DesktopView = () => (
     <div className="hidden grid-cols-4 gap-6 mb-8 md:grid">
       {/* Headers */}
-      <div className="font-semibold text-slate-700 text-base uppercase tracking-wide py-4">Features</div>
-      <div className="font-semibold text-slate-700 text-base text-center py-4">Dropbox</div>
-      <div className="font-semibold text-slate-700 text-base text-center py-4">Google Drive</div>
+      <div className="py-4 text-base font-semibold tracking-wide uppercase text-slate-700">Features</div>
+      <div className="py-4 text-base font-semibold text-center text-slate-700">Dropbox</div>
+      <div className="py-4 text-base font-semibold text-center text-slate-700">Google Drive</div>
       <div className="relative">
-        <div className="font-semibold text-bolt-dark-purple text-base text-center py-2">DirectDriveX</div>
+        <div className="py-2 text-base font-semibold text-center text-bolt-dark-purple">DirectDriveX</div>
       </div>
 
       {/* Rows */}
       <div className="space-y-3 text-base">
-        {features.map(f => <div key={f.name} className="py-4">{f.name}</div>)}
+        {features.map(f => <div key={f.name} className="py-4 font-medium text-slate-800">{f.name}</div>)}
       </div>
       <div className="space-y-3 text-base text-center">
         {features.map(f => <div key={f.name} className="py-4">{renderValue(f.dropbox, false)}</div>)}
@@ -53,11 +53,11 @@ export function ComparisonSection() {
       <div className="space-y-3 text-base text-center">
         {features.map(f => <div key={f.name} className="py-4">{renderValue(f.google, false)}</div>)}
       </div>
-      <div className="space-y-3 text-base text-center bg-gradient-to-b from-bolt-light-blue/50 to-white border-2 border-bolt-blue rounded-xl p-2 shadow-lg transform scale-105 relative">
-        <div className="absolute text-nowrap -top-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-bolt-blue to-bolt-cyan text-white text-sm px-4 py-2 rounded-full font-bold shadow-lg flex items-center">
+      <div className="relative p-2 space-y-3 text-base text-center transform scale-105 border-2 shadow-lg bg-gradient-to-b from-bolt-light-blue/50 to-white border-bolt-blue rounded-xl">
+        <div className="absolute flex items-center px-4 py-2 text-sm font-bold text-white transform -translate-x-1/2 rounded-full shadow-lg text-nowrap -top-5 left-1/2 bg-gradient-to-r from-bolt-blue to-bolt-cyan">
           <Star className="w-4 h-4 mr-1" fill="white" /> BEST CHOICE
         </div>
-        {features.map(f => <div key={f.name} className="py-4 hover:scale-105 transition-transform">{renderValue(f.mfc, true)}</div>)}
+        {features.map(f => <div key={f.name} className="py-4 transition-transform hover:scale-105">{renderValue(f.mfc, true)}</div>)}
       </div>
     </div>
   );
@@ -67,8 +67,8 @@ export function ComparisonSection() {
     const providerName = { dropbox: 'Dropbox', google: 'Google Drive', mfc: 'DirectDriveX' }[activeTab];
 
     return (
-      <div className="md:hidden mb-6">
-        <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg mb-6">
+      <div className="mb-6 md:hidden">
+        <div className="flex p-1 mb-6 space-x-1 rounded-lg bg-slate-100">
           {(['mfc', 'dropbox', 'google'] as Provider[]).map(p => (
             <button
               key={p}
@@ -84,7 +84,7 @@ export function ComparisonSection() {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2 text-sm">
-            <div className="font-semibold text-slate-700 uppercase tracking-wide py-3">Features</div>
+            <div className="py-3 font-semibold tracking-wide uppercase text-slate-700">Features</div>
             {features.map(f => <div key={f.name} className="py-3">{f.name}</div>)}
           </div>
           <div className={cn("space-y-2 text-sm text-center", activeTab === 'mfc' && 'bg-gradient-to-b from-bolt-light-blue/50 to-white border-2 border-bolt-blue rounded-lg')}>
@@ -97,13 +97,13 @@ export function ComparisonSection() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:py-16 py-10">
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 sm:p-6 p-4">
-        <div className="text-center mb-12">
-          <h2 className="lg:text-4xl md:text-3xl text-xl font-bold text-slate-900 mb-4">
+    <div className="px-4 py-10 mx-auto max-w-7xl lg:py-16">
+      <div className="p-4 bg-white border shadow-lg rounded-2xl border-slate-200 sm:p-6">
+        <div className="mb-12 text-center">
+          <h2 className="mb-4 text-xl font-bold lg:text-4xl md:text-3xl text-slate-900">
             Why professionals choose DirectDriveX
           </h2>
-          <p className="lg:text-lg text-sm text-slate-600 max-w-2xl mx-auto">
+          <p className="max-w-2xl mx-auto text-sm lg:text-lg text-slate-600">
             Compare the leading file transfer solutions and see why thousands of professionals trust us for their secure file sharing needs.
           </p>
         </div>
@@ -114,7 +114,7 @@ export function ComparisonSection() {
           <button className="bg-gradient-to-r from-bolt-blue to-bolt-mid-blue text-white font-medium px-8 py-3 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5">
             Get Started - 50GB Free Forever
           </button>
-          <p className="text-sm text-slate-500 mt-5">
+          <p className="mt-5 text-sm text-slate-500">
             <span className="inline-flex items-center">
               <Check className="w-4 h-4 mr-1 text-green-500" />
               1,247 files securely transferred in the last hour

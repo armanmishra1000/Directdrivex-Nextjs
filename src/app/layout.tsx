@@ -15,7 +15,6 @@ export const metadata: Metadata = {
   description: "Transfer files up to 30GB with bank-level security",
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' },
     ],
     other: [
