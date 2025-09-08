@@ -64,31 +64,31 @@ export function BatchDownloadCard({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto overflow-hidden bg-white border border-gray-100 shadow-xl rounded-3xl">
+    <div className="w-full max-w-5xl mx-auto overflow-hidden bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl">
       {/* Header Section */}
-      <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+      <div className="px-8 py-6 border-b border-cyan-500/20">
         <div className="flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-bolt-blue rounded-xl">
                 <Archive className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-bolt-black">
+              <h2 className="text-3xl font-bold text-bolt-white">
                 Files Ready for Download
               </h2>
             </div>
           </div>
           
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(batchDetails.status)} bg-green-50 border border-green-200`}>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(batchDetails.status)} bg-bolt-cyan/10 border border-bolt-cyan/20`}>
+              <div className="w-2 h-2 bg-bolt-cyan rounded-full"></div>
               {getStatusText(batchDetails.status)}
             </div>
             
             {batchDetails.status === 'ready' && zipDownloadUrl && (
               <button
                 onClick={handleZipDownload}
-                className="flex items-center gap-3 px-8 py-3 font-bold text-white transition-all duration-300 group bg-bolt-blue hover:bg-bolt-purple rounded-xl hover:shadow-xl hover:shadow-bolt-blue/25 hover:-translate-y-1"
+                className="flex items-center gap-3 px-8 py-3 font-bold text-white transition-all duration-300 group bg-gradient-to-r from-bolt-blue to-bolt-purple hover:from-bolt-purple hover:to-bolt-blue rounded-xl hover:shadow-lg hover:shadow-bolt-cyan/20 hover:-translate-y-0.5"
               >
                 <div className="p-1 transition-colors rounded-lg bg-white/20 group-hover:bg-white/30">
                   <Download className="w-5 h-5" />
@@ -103,25 +103,25 @@ export function BatchDownloadCard({
       {/* Batch Statistics */}
       <div className="px-8 py-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <div className="p-6 text-center transition-all duration-300 border border-blue-200 group bg-blue-50 rounded-2xl hover:shadow-lg">
+          <div className="p-6 text-center transition-all duration-300 border border-white/10 group bg-white/5 backdrop-blur-sm rounded-lg hover:bg-white/10 hover:shadow-lg hover:shadow-bolt-cyan/20">
             <div className="inline-flex items-center justify-center w-12 h-12 mb-3 transition-transform bg-bolt-blue rounded-xl group-hover:scale-110">
               <Archive className="w-6 h-6 text-white" />
             </div>
-            <div className="mb-1 text-3xl font-bold text-bolt-black">{batchDetails.total_files}</div>
+            <div className="mb-1 text-3xl font-bold text-bolt-white">{batchDetails.total_files}</div>
             <div className="text-sm font-semibold tracking-wide uppercase text-bolt-cyan">Total Files</div>
           </div>
-          <div className="p-6 text-center transition-all duration-300 border border-green-200 group bg-green-50 rounded-2xl hover:shadow-lg">
-            <div className="inline-flex items-center justify-center w-12 h-12 mb-3 transition-transform bg-green-500 rounded-xl group-hover:scale-110">
+          <div className="p-6 text-center transition-all duration-300 border border-white/10 group bg-white/5 backdrop-blur-sm rounded-lg hover:bg-white/10 hover:shadow-lg hover:shadow-bolt-cyan/20">
+            <div className="inline-flex items-center justify-center w-12 h-12 mb-3 transition-transform bg-bolt-cyan rounded-xl group-hover:scale-110">
               <HardDrive className="w-6 h-6 text-white" />
             </div>
-            <div className="mb-1 text-3xl font-bold text-bolt-black">{batchDetails.total_size_formatted}</div>
+            <div className="mb-1 text-3xl font-bold text-bolt-white">{batchDetails.total_size_formatted}</div>
             <div className="text-sm font-semibold tracking-wide uppercase text-bolt-cyan">Total Size</div>
           </div>
-          <div className="p-6 text-center transition-all duration-300 border border-purple-200 group bg-purple-50 rounded-2xl hover:shadow-lg">
-            <div className="inline-flex items-center justify-center w-12 h-12 mb-3 transition-transform bg-purple-500 rounded-xl group-hover:scale-110">
+          <div className="p-6 text-center transition-all duration-300 border border-white/10 group bg-white/5 backdrop-blur-sm rounded-lg hover:bg-white/10 hover:shadow-lg hover:shadow-bolt-cyan/20">
+            <div className="inline-flex items-center justify-center w-12 h-12 mb-3 transition-transform bg-bolt-purple rounded-xl group-hover:scale-110">
               <Clock className="w-6 h-6 text-white" />
             </div>
-            <div className="mb-1 text-2xl font-bold text-bolt-black">
+            <div className="mb-1 text-2xl font-bold text-bolt-white">
               {batchDetails.expires_at ? formatDate(batchDetails.expires_at) : 'N/A'}
             </div>
             <div className="text-sm font-semibold tracking-wide uppercase text-bolt-cyan">Expires</div>
