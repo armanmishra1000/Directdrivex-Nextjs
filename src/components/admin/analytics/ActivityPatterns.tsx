@@ -64,8 +64,8 @@ export const ActivityPatterns: React.FC<ActivityPatternsProps> = ({
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
             <Activity className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-      </div>
-        <div>
+          </div>
+          <div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
               Activity Patterns
             </h3>
@@ -200,7 +200,7 @@ export const ActivityPatterns: React.FC<ActivityPatternsProps> = ({
             <Activity className="w-12 h-12 mx-auto mb-4 text-slate-400 dark:text-slate-500" />
             <p className="text-slate-500 dark:text-slate-400">No data available</p>
           </div>
-      </div>
+        </div>
       )}
     </div>
   );
