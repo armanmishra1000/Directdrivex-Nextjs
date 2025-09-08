@@ -1,4 +1,4 @@
-import { ComparisonSection } from "@/components/comparison/ComparisonSection";
+import ComparisonSection from "@/components/comparison/ComparisonSection";
 import { HeroSection } from "@/components/hero/HeroSection";
 import { UploadWidget } from "@/components/hero/UploadWidget";
 import { MadeWithDyad } from "@/components/made-with-dyad";
