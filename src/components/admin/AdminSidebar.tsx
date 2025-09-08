@@ -48,7 +48,7 @@ const navSections = [
     icon: Server,
     links: [
       { href: "/admin-panel/monitoring", label: "Monitoring", icon: Server },
-      { href: "/admin-panel/processes", label: "Background Processes", icon: Bot },
+      { href: "/admin-panel/background-processes", label: "Background Processes", icon: Bot },
       { href: "/admin-panel/security", label: "Security Settings", icon: Shield },
       { href: "/admin-panel/system-logs", label: "System Logs", icon: FileText },
     ],
@@ -72,7 +72,7 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
       "fixed top-20 left-0 h-[calc(100vh-80px)] z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-r border-slate-400/20 dark:border-slate-400/10 transition-all duration-300 ease-in-out",
       collapsed ? "w-[60px] overflow-hidden" : "w-[280px]"
     )}>
-      <div className="h-full flex flex-col">
+      <div className="flex flex-col h-full">
         <nav className="flex-grow p-2 space-y-2 overflow-y-auto">
           {navSections.map(section => (
             <div key={section.title}>

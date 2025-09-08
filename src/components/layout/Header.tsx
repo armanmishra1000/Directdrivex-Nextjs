@@ -125,7 +125,7 @@ export function Header() {
               isMobile ? "w-full h-[56px]" : "w-[140px] h-[44px]"
             )}
           >
-            <div className="flex items-center justify-center bg-white/20 rounded-full w-7 h-7">
+            <div className="flex items-center justify-center rounded-full bg-white/20 w-7 h-7">
               <UserIcon className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm font-semibold truncate">{displayName}</span>
@@ -172,29 +172,29 @@ export function Header() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-50 transition-all duration-300 backdrop-blur-xl bg-white/95",
+          "sticky top-0 z-50 transition-all duration-300 backdrop-blur-xl bg-white border-b border-gray-300",
           isScrolled
             ? "shadow-lg border-b border-slate-200/80"
-            : "border-b border-transparent"
+            : "border-b"
         )}
       >
-        <div className="container mx-auto px-4">
+        <div className="container px-4 mx-auto">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-bolt-blue rounded-xl shadow-lg">
+              <div className="flex items-center justify-center w-10 h-10 shadow-lg bg-bolt-blue rounded-xl">
                 <CloudUpload className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-bolt-black to-bolt-medium-black bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-bolt-black to-bolt-medium-black bg-clip-text">
                 Mfcnextgen
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
+            <nav className="items-center hidden space-x-8 lg:flex">
               <Link
                 href="/how-it-works"
-                className="group relative text-sm font-medium text-bolt-medium-black transition-colors duration-300 hover:text-bolt-blue"
+                className="relative text-sm font-medium transition-colors duration-300 group text-bolt-medium-black hover:text-bolt-blue"
               >
                 How it Works
                 <span className="absolute bottom-[-4px] left-0 h-0.5 w-0 bg-gradient-to-r from-bolt-blue to-bolt-purple transition-all duration-300 group-hover:w-full"></span>
@@ -210,7 +210,7 @@ export function Header() {
             <div className="lg:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-100"
+                className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-100"
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
@@ -226,19 +226,19 @@ export function Header() {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-white z-40 pt-20 overflow-y-auto animate-fade-in-down">
-          <div className="container mx-auto px-4 flex flex-col h-full">
+        <div className="fixed inset-0 z-40 pt-20 overflow-y-auto bg-white lg:hidden animate-fade-in-down">
+          <div className="container flex flex-col h-full px-4 mx-auto">
             <nav className="flex-grow">
               <Link
                 href="/how-it-works"
                 onClick={closeMobileMenu}
-                className="flex items-center justify-between w-full px-4 py-4 text-lg font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-bolt-blue transition-colors"
+                className="flex items-center justify-between w-full px-4 py-4 text-lg font-medium text-gray-700 transition-colors rounded-lg hover:bg-gray-50 hover:text-bolt-blue"
               >
                 <span>How it Works</span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </Link>
             </nav>
-            <div className="mt-auto pb-8">
+            <div className="pb-8 mt-auto">
               <AuthButtons isMobile />
             </div>
           </div>
