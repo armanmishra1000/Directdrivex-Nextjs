@@ -182,13 +182,13 @@ export default function HetznerManagementPage() {
             <p className="mt-2 text-slate-500 dark:text-slate-400">
               Please wait while we fetch your storage information
             </p>
-          </div>
-        ) : error ? (
+        </div>
+      ) : error ? (
           <ErrorMessage 
             message={error} 
             onRetry={loadFiles}
           />
-        ) : files.length === 0 ? (
+      ) : files.length === 0 ? (
           <EmptyState
             icon={Server}
             title="No Hetzner backup files found"
@@ -196,43 +196,43 @@ export default function HetznerManagementPage() {
           />
         ) : (
           <>
-            {viewMode === 'list' ? (
-              <HetznerFileListView
-                files={files}
-                selectedFiles={selectedFiles}
-                onToggleSelection={toggleFileSelection}
-                onSelectAll={selectAllFiles}
-                onSort={setSortBy}
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onDownload={downloadFile}
-                onPreview={previewFile}
+          {viewMode === 'list' ? (
+            <HetznerFileListView
+              files={files}
+              selectedFiles={selectedFiles}
+              onToggleSelection={toggleFileSelection}
+              onSelectAll={selectAllFiles}
+              onSort={setSortBy}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onDownload={downloadFile}
+              onPreview={previewFile}
                 onCheckIntegrity={checkIntegrity}
-                onRecover={recoverFile}
-                onDelete={deleteFile}
-              />
-            ) : (
-              <div className="p-6">
-                <HetznerFileGridView
-                  files={files}
-                  selectedFiles={selectedFiles}
-                  onToggleSelection={toggleFileSelection}
-                  onDownload={downloadFile}
-                  onPreview={previewFile}
-                  onDelete={deleteFile}
-                />
-              </div>
-            )}
-            <HetznerPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalFiles={totalFiles}
-              pageSize={pageSize}
-              onPageChange={setPage}
+              onRecover={recoverFile}
+              onDelete={deleteFile}
             />
+          ) : (
+              <div className="p-6">
+            <HetznerFileGridView
+              files={files}
+              selectedFiles={selectedFiles}
+              onToggleSelection={toggleFileSelection}
+              onDownload={downloadFile}
+              onPreview={previewFile}
+              onDelete={deleteFile}
+            />
+              </div>
+          )}
+          <HetznerPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalFiles={totalFiles}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
           </>
         )}
-      </div>
+        </div>
     </div>
   );
 }
